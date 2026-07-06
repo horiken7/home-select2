@@ -3,6 +3,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  aspect-ratio: 4 / 3;
+  min-height: 280px;
 }
 
 .card-image.has-real-image img {
@@ -19,15 +21,22 @@
 }
 
 .card-image.has-real-image::after {
-  content: "全体表示";
+  content: "タップで原寸";
   position: absolute;
   right: 14px;
   bottom: 14px;
   border-radius: 999px;
   padding: 5px 10px;
   color: #1e3a8a;
-  background: rgba(255,255,255,.86);
+  background: rgba(255,255,255,.88);
   font-size: .74rem;
   font-weight: 900;
   z-index: 2;
+}
+
+@media (max-width: 560px) {
+  .card-image.has-real-image {
+    aspect-ratio: 1.25 / 1;
+    min-height: 310px;
+  }
 }
