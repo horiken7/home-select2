@@ -61,7 +61,7 @@ function textLink(url, className, text, label) {
 
 function badgeClass(tag) {
   if (["UR", "保証人不要", "高齢者相談可", "高齢者入居可", "初期費用重視"].includes(tag)) return "green";
-  if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認"].includes(tag)) return "orange";
+  if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認", "間取り要確認"].includes(tag)) return "orange";
   if (["取得失敗", "条件外"].includes(tag)) return "red";
   return "";
 }
@@ -74,6 +74,11 @@ function isBadListingUrl(url) {
   return false;
 }
 
+function isSameUrl(a, b) {
+  if (!a || !b) return false;
+  return String(a).replace(/#$/, "") === String(b).replace(/#$/, "");
+}
+
 function isDisplayableListing(item) {
   const title = String(item?.title || "");
   if (!item) return false;
@@ -82,6 +87,62 @@ function isDisplayableListing(item) {
   if (title.includes("店舗紹介")) return false;
   if (isBadListingUrl(item.listingUrl) && isBadListingUrl(item.sourceUrl)) return false;
   return true;
+}
+
+function shorten(value, max = 34) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+function displayTitle(item) {
+  const rawTitle = String(item.title || "").replace(/\s+/g, " ").trim();
+  const genericTitle = ["部屋詳細", "詳細を見る", "物件詳細"].includes(rawTitle);
+  const noisyTitle = rawTitle.includes("画像") || rawTitle.includes("閲覧回数") || rawTitle.includes("物件の詳細を見る");
+  const priceFirstTitle = /^\d+(?:\.\d+)?万円/.test(rawTitle);
+
+  if (genericTitle || noisyTitle || priceFirstTitle) {
+    const area = item.area && item.area !== "福岡県全域" ? item.area : item.source || "候補";
+    return shorten(`${area} ${item.layoutLabel || "間取り要確認"} / ${item.rentLabel || "家賃要確認"}`, 38);
+  }
+
+  return shorten(
+    rawTitle
+      .replace(/\s*物件の詳細を見る\s*/g, " ")
+      .replace(/\s*詳細を見る\s*/g, " ")
+      .replace(/\s*賃貸マンション\s*/g, " ")
+      .trim(),
+    38
+  );
+}
+
+function getUrls(item) {
+  const listingUrl = !isBadListingUrl(item.listingUrl) ? item.listingUrl : "";
+  const sourceUrl = !isBadListingUrl(item.sourceUrl) ? item.sourceUrl : "";
+  const hasDistinctDetail = listingUrl && sourceUrl && !isSameUrl(listingUrl, sourceUrl) && item.matchStatus !== "source_link";
+  return {
+    detailUrl: hasDistinctDetail ? listingUrl : "",
+    searchUrl: sourceUrl || listingUrl || "",
+    imageUrl: hasDistinctDetail ? listingUrl : sourceUrl || listingUrl || ""
+  };
+}
+
+function getAccuracy(item, detailUrl, searchUrl) {
+  const hasDetail = Boolean(detailUrl);
+  const hasRent = Number(item.rent) !== 999;
+  const hasWalk = Number(item.walk) !== 999;
+  const hasArea = item.area && item.area !== "福岡県全域";
+  const sourceOnly = !hasDetail || item.matchStatus === "source_link" || isSameUrl(detailUrl, searchUrl);
+
+  if (hasDetail && hasRent && hasArea && hasWalk) {
+    return { label: "高", className: "high", hint: "個別リンク・家賃・住所・徒歩情報を取得" };
+  }
+  if (hasDetail && hasRent && hasArea) {
+    return { label: "中", className: "medium", hint: "個別リンク・家賃・住所を取得。徒歩などは要確認" };
+  }
+  if (sourceOnly) {
+    return { label: "要確認", className: "check", hint: "検索結果ページへの導線。詳細はリンク先で確認" };
+  }
+  return { label: "中", className: "medium", hint: "一部項目は自動抽出。必ずリンク先で確認" };
 }
 
 function getFilterValues() {
@@ -151,44 +212,65 @@ function renderCards() {
 
 function renderCard(item, index) {
   const tags = Array.isArray(item.tags) ? item.tags : [];
-  const listingUrl = !isBadListingUrl(item.listingUrl) ? item.listingUrl : item.sourceUrl || "";
-  const sourceUrl = !isBadListingUrl(item.sourceUrl) ? item.sourceUrl : item.listingUrl || "";
+  const { detailUrl, searchUrl, imageUrl } = getUrls(item);
+  const accuracy = getAccuracy(item, detailUrl, searchUrl);
+  const cardTitle = displayTitle(item);
   const classes = [
     "property-card",
     index === 0 ? "best" : "",
     item.type === "public" ? "public" : "",
-    tags.includes("条件要確認") || !listingUrl ? "needs-check" : ""
+    accuracy.className === "check" ? "needs-check" : ""
   ].join(" ").trim();
   const mockImage = `<span class="mock-room"></span><span class="mock-window"></span><span class="mock-floor"></span>`;
-  const imageLink = listingUrl
-    ? `<a class="card-image" data-source="${escapeAttr(item.source)}" href="${escapeAttr(listingUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeAttr(item.title)}を開く">${mockImage}</a>`
+  const imageLink = imageUrl
+    ? `<a class="card-image" data-source="${escapeAttr(item.source)}" href="${escapeAttr(imageUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeAttr(cardTitle)}を開く">${mockImage}</a>`
     : `<div class="card-image" data-source="リンク要確認">${mockImage}</div>`;
+
+  const detailButton = detailUrl
+    ? textLink(detailUrl, "open-link", "物件詳細を開く", `${cardTitle}の物件詳細を開く`)
+    : `<span class="open-link disabled">物件詳細なし</span>`;
+  const searchButton = textLink(searchUrl, "source-link", "検索結果を開く", `${item.source || "取得元"}の検索結果を開く`);
 
   return `
     <article class="${classes}">
       ${imageLink}
       <div class="card-body">
         <div class="card-top">
-          <div>
+          <div class="card-main">
             <p class="status">${escapeHtml(item.status || item.matchStatus || "候補")}</p>
-            <h3 class="card-title">${textLink(listingUrl, "", item.title, `${item.title}を開く`)}</h3>
-            ${textLink(listingUrl, "address-link", item.address, `${item.address}を開く`)}
+            <h3 class="card-title">${textLink(imageUrl, "", cardTitle, `${cardTitle}を開く`)}</h3>
+            <p class="original-title">元タイトル：${escapeHtml(shorten(item.title, 56))}</p>
           </div>
-          <div class="score">${item.displayScore}</div>
+          <div class="score" title="条件一致度を100点満点で評価した暫定スコアです">
+            <span class="score-label">おすすめ度</span>
+            <strong class="score-value">${item.displayScore}</strong>
+            <span class="score-unit">/100</span>
+          </div>
         </div>
+
+        <div class="key-facts">
+          <div class="key-fact rent"><span>家賃</span><strong>${escapeHtml(item.rentLabel)}</strong></div>
+          <div class="key-fact layout"><span>間取り</span><strong>${escapeHtml(item.layoutLabel)}</strong></div>
+        </div>
+
+        <div class="address-box">
+          <span>住所・エリア</span>
+          ${textLink(imageUrl, "address-link", item.address || item.area || "住所要確認", `${item.address || item.area || "住所"}を開く`)}
+        </div>
+
+        <div class="meta-row">
+          <span class="accuracy accuracy-${accuracy.className}" title="${escapeAttr(accuracy.hint)}">取得精度：${escapeHtml(accuracy.label)}</span>
+          <span class="walk-chip">駅徒歩：${escapeHtml(item.walkLabel)}</span>
+        </div>
+
         <div class="badges">
           ${tags.map((tag) => `<span class="badge ${badgeClass(tag)}">${escapeHtml(tag)}</span>`).join("")}
         </div>
-        <div class="specs">
-          <div class="spec"><span>エリア</span><strong>${escapeHtml(item.area)}</strong></div>
-          <div class="spec"><span>間取り</span><strong>${escapeHtml(item.layoutLabel)}</strong></div>
-          <div class="spec"><span>家賃</span><strong>${escapeHtml(item.rentLabel)}</strong></div>
-          <div class="spec"><span>駅徒歩</span><strong>${escapeHtml(item.walkLabel)}</strong></div>
-        </div>
+
         <p class="note">${escapeHtml(item.note)}</p>
         <div class="card-actions">
-          ${textLink(listingUrl, "open-link", listingUrl ? "リンク先で確認" : "リンク要確認", `${item.title}を開く`)}
-          ${textLink(sourceUrl, "source-link", `${item.source || "取得元"}を開く`, `${item.source || "取得元"}を開く`)}
+          ${detailButton}
+          ${searchButton}
         </div>
       </div>
     </article>`;
