@@ -1,6 +1,6 @@
 # 福岡シニア賃貸横断サーチ / home-select2
 
-定年後に福岡市または周辺地域で、夫婦2人暮らし向けの一時的な賃貸物件を探すための静的モックアップです。
+定年後に福岡市または周辺地域で、夫婦2人暮らし向けの一時的な賃貸物件を探すための静的サイトです。
 
 ## 目的
 
@@ -24,13 +24,71 @@
 ├─ index.html
 ├─ styles.css
 ├─ app.js
+├─ data/
+│  ├─ properties.json
+│  └─ sources.json
+├─ scripts/
+│  └─ validate-data.mjs
+├─ .github/workflows/
+│  ├─ pages.yml
+│  └─ validate-data.yml
 └─ README.md
 ```
 
 ## 現在の状態
 
-この版は、実データ取得前のHTML/CSS/JavaScriptモックアップです。
-将来は `app.js` の `mockListings` を、PlaywrightやAPIで取得した `properties.json` に置き換える想定です。
+この版は、実データ取得に進む前段階のJSON読み込み型モックアップです。
+`app.js` に物件データを直書きせず、`data/properties.json` と `data/sources.json` を読み込んで表示します。
+
+## データ設計
+
+### data/sources.json
+
+横断検索対象サイトの一覧です。
+
+必須項目:
+
+- `id`
+- `name`
+- `description`
+- `url`
+
+### data/properties.json
+
+検索結果カードに表示する物件・検索導線データです。
+
+必須項目:
+
+- `id`
+- `title`
+- `source`
+- `sourceId`
+- `status`
+- `address`
+- `area`
+- `areaGroup`
+- `type`
+- `rent`
+- `rentLabel`
+- `layout`
+- `layoutLabel`
+- `walk`
+- `walkLabel`
+- `score`
+- `tags`
+- `note`
+- `listingUrl`
+- `sourceUrl`
+
+## 検証
+
+次のコマンドでJSONの必須項目とURLを確認できます。
+
+```bash
+node scripts/validate-data.mjs
+```
+
+GitHub Actionsの `Validate property data` でも、push時に同じ検証を実行します。
 
 ## 実装時の重要ルール
 
@@ -38,3 +96,4 @@
 - 画像、物件名、住所、ボタンをすべて `listingUrl` にリンクする
 - URL未取得の物件は表示しない、または「リンク要確認」と明示する
 - サ高住、老人ホーム、介護施設は賃貸物件とは分けて扱う
+- 各サイトから取得したデータは、まず `data/properties.json` の形式に正規化する
