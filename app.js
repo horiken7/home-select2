@@ -60,8 +60,8 @@ function textLink(url, className, text, label) {
 }
 
 function badgeClass(tag) {
-  if (["UR", "保証人不要", "高齢者相談可", "高齢者入居可", "初期費用重視"].includes(tag)) return "green";
-  if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認", "間取り要確認"].includes(tag)) return "orange";
+  if (["UR", "保証人不要", "高齢者相談可", "高齢者入居可", "初期費用重視", "画像取得"].includes(tag)) return "green";
+  if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認", "間取り要確認", "画像要確認"].includes(tag)) return "orange";
   if (["取得失敗", "条件外"].includes(tag)) return "red";
   return "";
 }
@@ -72,6 +72,12 @@ function isBadListingUrl(url) {
   if (String(url).endsWith("#")) return true;
   if (String(url).includes("/company/")) return true;
   return false;
+}
+
+function isUsableImageUrl(url) {
+  if (!url) return false;
+  if (!String(url).startsWith("https://")) return false;
+  return true;
 }
 
 function isSameUrl(a, b) {
@@ -119,10 +125,12 @@ function getUrls(item) {
   const listingUrl = !isBadListingUrl(item.listingUrl) ? item.listingUrl : "";
   const sourceUrl = !isBadListingUrl(item.sourceUrl) ? item.sourceUrl : "";
   const hasDistinctDetail = listingUrl && sourceUrl && !isSameUrl(listingUrl, sourceUrl) && item.matchStatus !== "source_link";
+  const preferredLink = hasDistinctDetail ? listingUrl : sourceUrl || listingUrl || "";
+
   return {
     detailUrl: hasDistinctDetail ? listingUrl : "",
     searchUrl: sourceUrl || listingUrl || "",
-    imageUrl: hasDistinctDetail ? listingUrl : sourceUrl || listingUrl || ""
+    cardLinkUrl: preferredLink
   };
 }
 
@@ -131,13 +139,14 @@ function getAccuracy(item, detailUrl, searchUrl) {
   const hasRent = Number(item.rent) !== 999;
   const hasWalk = Number(item.walk) !== 999;
   const hasArea = item.area && item.area !== "福岡県全域";
+  const hasImage = isUsableImageUrl(item.imageUrl);
   const sourceOnly = !hasDetail || item.matchStatus === "source_link" || isSameUrl(detailUrl, searchUrl);
 
-  if (hasDetail && hasRent && hasArea && hasWalk) {
-    return { label: "高", className: "high", hint: "個別リンク・家賃・住所・徒歩情報を取得" };
+  if (hasDetail && hasRent && hasArea && hasWalk && hasImage) {
+    return { label: "高", className: "high", hint: "個別リンク・画像・家賃・住所・徒歩情報を取得" };
   }
   if (hasDetail && hasRent && hasArea) {
-    return { label: "中", className: "medium", hint: "個別リンク・家賃・住所を取得。徒歩などは要確認" };
+    return { label: "中", className: "medium", hint: "個別リンク・家賃・住所を取得。画像や徒歩などは要確認" };
   }
   if (sourceOnly) {
     return { label: "要確認", className: "check", hint: "検索結果ページへの導線。詳細はリンク先で確認" };
@@ -217,9 +226,17 @@ function renderCards() {
   container.innerHTML = cards.map((item, index) => renderCard(item, index)).join("");
 }
 
+function renderImageMarkup(item, cardTitle) {
+  if (isUsableImageUrl(item.imageUrl)) {
+    return `<img src="${escapeAttr(item.imageUrl)}" alt="${escapeAttr(cardTitle)}" loading="lazy" onerror="this.closest('.card-image').classList.add('image-failed'); this.remove();" />`;
+  }
+
+  return `<span class="mock-room"></span><span class="mock-window"></span><span class="mock-floor"></span><span class="image-placeholder-text">画像要確認</span>`;
+}
+
 function renderCard(item, index) {
   const tags = Array.isArray(item.tags) ? item.tags : [];
-  const { detailUrl, searchUrl, imageUrl } = getUrls(item);
+  const { detailUrl, searchUrl, cardLinkUrl } = getUrls(item);
   const accuracy = getAccuracy(item, detailUrl, searchUrl);
   const cardTitle = displayTitle(item);
   const classes = [
@@ -228,10 +245,10 @@ function renderCard(item, index) {
     item.type === "public" ? "public" : "",
     accuracy.className === "check" ? "needs-check" : ""
   ].join(" ").trim();
-  const mockImage = `<span class="mock-room"></span><span class="mock-window"></span><span class="mock-floor"></span>`;
-  const imageLink = imageUrl
-    ? `<a class="card-image" data-source="${escapeAttr(item.source)}" href="${escapeAttr(imageUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeAttr(cardTitle)}を開く">${mockImage}</a>`
-    : `<div class="card-image" data-source="リンク要確認">${mockImage}</div>`;
+  const imageMarkup = renderImageMarkup(item, cardTitle);
+  const imageLink = cardLinkUrl
+    ? `<a class="card-image ${isUsableImageUrl(item.imageUrl) ? 'has-real-image' : 'has-placeholder'}" data-source="${escapeAttr(item.source)}" href="${escapeAttr(cardLinkUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeAttr(cardTitle)}を開く">${imageMarkup}</a>`
+    : `<div class="card-image has-placeholder" data-source="リンク要確認">${imageMarkup}</div>`;
 
   const detailButton = detailUrl
     ? textLink(detailUrl, "open-link", "物件詳細を開く", `${cardTitle}の物件詳細を開く`)
@@ -245,7 +262,7 @@ function renderCard(item, index) {
         <div class="card-top">
           <div class="card-main">
             <p class="status">${escapeHtml(item.status || item.matchStatus || "候補")}</p>
-            <h3 class="card-title">${textLink(imageUrl, "", cardTitle, `${cardTitle}を開く`)}</h3>
+            <h3 class="card-title">${textLink(cardLinkUrl, "", cardTitle, `${cardTitle}を開く`)}</h3>
             <p class="original-title">元タイトル：${escapeHtml(shorten(item.title, 56))}</p>
           </div>
           <div class="score" title="条件一致度を100点満点で評価した暫定スコアです">
@@ -262,7 +279,7 @@ function renderCard(item, index) {
 
         <div class="address-box">
           <span>住所・エリア</span>
-          ${textLink(imageUrl, "address-link", item.address || item.area || "住所要確認", `${item.address || item.area || "住所"}を開く`)}
+          ${textLink(cardLinkUrl, "address-link", item.address || item.area || "住所要確認", `${item.address || item.area || "住所"}を開く`)}
         </div>
 
         <div class="meta-row">
