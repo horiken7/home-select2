@@ -164,12 +164,19 @@ function matchesArea(item, area) {
   return true;
 }
 
+function isUnknownValue(value) {
+  return Number(value) === 999 || Number.isNaN(Number(value));
+}
+
 function matches(item, filter) {
+  const rent = Number(item.rent);
+  const walk = Number(item.walk);
+
   if (!matchesArea(item, filter.area)) return false;
   if (filter.type !== "all" && item.type !== filter.type) return false;
-  if (Number(item.rent) > filter.rent) return false;
+  if (!isUnknownValue(rent) && rent > filter.rent) return false;
   if (Number(item.layout) < filter.layout) return false;
-  if (filter.walk < 999 && Number(item.walk) > filter.walk) return false;
+  if (filter.walk < 999 && !isUnknownValue(walk) && walk > filter.walk) return false;
   return true;
 }
 
