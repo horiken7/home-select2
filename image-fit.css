@@ -1,0 +1,33 @@
+.card-image.has-real-image {
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-image.has-real-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain !important;
+  object-position: center center;
+  background: #fff;
+  transform: none !important;
+}
+
+.property-card:hover .card-image.has-real-image img {
+  transform: none !important;
+}
+
+.card-image.has-real-image::after {
+  content: "全体表示";
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: #1e3a8a;
+  background: rgba(255,255,255,.86);
+  font-size: .74rem;
+  font-weight: 900;
+  z-index: 2;
+}
