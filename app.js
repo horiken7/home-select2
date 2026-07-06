@@ -28,7 +28,7 @@ async function loadData() {
     ]);
 
     state.targetSites = Array.isArray(sources) ? sources : [];
-    state.listings = Array.isArray(properties) ? properties : [];
+    state.listings = Array.isArray(properties) ? properties.filter(isDisplayableListing) : [];
     state.loadError = null;
   } catch (error) {
     console.error(error);
@@ -64,6 +64,24 @@ function badgeClass(tag) {
   if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認"].includes(tag)) return "orange";
   if (["取得失敗", "条件外"].includes(tag)) return "red";
   return "";
+}
+
+function isBadListingUrl(url) {
+  if (!url) return true;
+  if (!String(url).startsWith("https://")) return true;
+  if (String(url).endsWith("#")) return true;
+  if (String(url).includes("/company/")) return true;
+  return false;
+}
+
+function isDisplayableListing(item) {
+  const title = String(item?.title || "");
+  if (!item) return false;
+  if (Number(item.layout) < 2) return false;
+  if (title.includes("会社紹介")) return false;
+  if (title.includes("店舗紹介")) return false;
+  if (isBadListingUrl(item.listingUrl) && isBadListingUrl(item.sourceUrl)) return false;
+  return true;
 }
 
 function getFilterValues() {
@@ -133,8 +151,8 @@ function renderCards() {
 
 function renderCard(item, index) {
   const tags = Array.isArray(item.tags) ? item.tags : [];
-  const listingUrl = item.listingUrl || item.sourceUrl || "";
-  const sourceUrl = item.sourceUrl || item.listingUrl || "";
+  const listingUrl = !isBadListingUrl(item.listingUrl) ? item.listingUrl : item.sourceUrl || "";
+  const sourceUrl = !isBadListingUrl(item.sourceUrl) ? item.sourceUrl : item.listingUrl || "";
   const classes = [
     "property-card",
     index === 0 ? "best" : "",
