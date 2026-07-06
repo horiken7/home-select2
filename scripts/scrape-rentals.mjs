@@ -26,6 +26,13 @@ function isValidHttpsUrl(value) {
   return typeof value === "string" && value.startsWith("https://");
 }
 
+function isLikelyImageUrl(value) {
+  if (!isValidHttpsUrl(value)) return false;
+  if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(value)) return true;
+  if (value.includes("image") || value.includes("photo") || value.includes("img")) return true;
+  return false;
+}
+
 function parseRent(text) {
   const normalized = normalizeText(text).replace(/,/g, "");
   const man = normalized.match(/([0-9]+(?:\.[0-9]+)?)\s*万円/);
@@ -93,6 +100,7 @@ function scoreListing(item) {
   if (Number(item.rent) <= 10) score += 8;
   if (Number(item.walk) <= 15) score += 8;
   if (item.listingUrl && item.listingUrl !== item.sourceUrl) score += 4;
+  if (item.imageUrl) score += 2;
   return Math.min(score, 100);
 }
 
@@ -124,6 +132,7 @@ function makeFallbackSourceLink(source) {
     note: "詳細URLを取得できない場合の公式検索導線です。画像、物件名、住所、ボタンはすべてリンク付きです。",
     listingUrl: source.url,
     sourceUrl: source.url,
+    imageUrl: "",
     matchStatus: "source_link"
   };
   item.score = scoreListing(item);
@@ -136,6 +145,41 @@ async function safeText(locator) {
   } catch {
     return "";
   }
+}
+
+async function collectImageUrl(node, source) {
+  const imageCandidates = [
+    "img[src]",
+    "img[data-src]",
+    "img[data-original]",
+    "img[data-lazy]",
+    "source[srcset]",
+    "[style*=background-image]"
+  ];
+
+  for (const selector of imageCandidates) {
+    const target = node.locator(selector).first();
+    const count = await target.count().catch(() => 0);
+    if (!count) continue;
+
+    const attrs = ["src", "data-src", "data-original", "data-lazy", "srcset"];
+    for (const attr of attrs) {
+      const value = await target.getAttribute(attr).catch(() => null);
+      if (!value) continue;
+      const first = value.split(",")[0].trim().split(" ")[0];
+      const absolute = new URL(first, source.url).toString();
+      if (isLikelyImageUrl(absolute)) return absolute;
+    }
+
+    const style = await target.getAttribute("style").catch(() => null);
+    const match = style?.match(/url\(['"]?([^'")]+)['"]?\)/i);
+    if (match?.[1]) {
+      const absolute = new URL(match[1], source.url).toString();
+      if (isLikelyImageUrl(absolute)) return absolute;
+    }
+  }
+
+  return "";
 }
 
 async function collectCandidateCards(page, source) {
@@ -167,13 +211,14 @@ async function collectCandidateCards(page, source) {
         const listingUrl = href ? new URL(href, source.url).toString() : source.url;
         if (!isValidHttpsUrl(listingUrl)) continue;
 
+        const imageUrl = await collectImageUrl(node, source);
         const titleCandidate = await safeText(linkHandle);
         const title = truncate(titleCandidate || text.split(" ").slice(0, 8).join(" "), 60);
         const area = areaFromText(text);
         const parsedLayout = parseLayout(text);
         const rent = parseRent(text);
         const walk = parseWalk(text);
-        const tags = [source.name, listingUrl === source.url ? "リンク要確認" : "取得リンク", parsedLayout.flexible ? "間取り要確認" : ""]
+        const tags = [source.name, listingUrl === source.url ? "リンク要確認" : "取得リンク", imageUrl ? "画像取得" : "画像要確認", parsedLayout.flexible ? "間取り要確認" : ""]
           .filter(Boolean);
         if (source.id === "ur") tags.push("UR", "保証人不要");
         if (["able", "f-takken", "homemate"].includes(source.id)) tags.push("高齢者相談可");
@@ -199,6 +244,7 @@ async function collectCandidateCards(page, source) {
           note: "Playwrightで自動抽出した候補です。家賃、間取り、空室、入居審査は必ずリンク先で確認してください。",
           listingUrl,
           sourceUrl: source.url,
+          imageUrl,
           matchStatus: listingUrl === source.url ? "source_link" : "needs_check"
         };
         item.score = scoreListing(item);
