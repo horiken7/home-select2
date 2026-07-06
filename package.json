@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "validate:data": "node scripts/validate-data.mjs",
-    "scrape": "node scripts/scrape-rentals.mjs"
+    "scrape": "node scripts/scrape-rentals.mjs",
+    "clean:data": "node scripts/clean-rental-data.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.0"
