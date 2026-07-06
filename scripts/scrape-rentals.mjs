@@ -27,12 +27,16 @@ function truncate(value, length = MAX_TEXT_LENGTH) {
 function absoluteUrl(value, baseUrl) {
   if (!value) return "";
   const first = String(value).split(",")[0].trim().split(" ")[0].replace(/^['"]|['"]$/g, "");
-  if (!first || first.startsWith("data:") || first.startsWith("blob:")) return "";
+  if (!first || first.startsWith("data:") || first.startsWith("blob:") || first.startsWith("mailto:") || first.startsWith("tel:")) return "";
   try {
     return new URL(first, baseUrl).toString();
   } catch {
     return "";
   }
+}
+
+function normalizeUrl(url) {
+  return String(url || "").replace(/#$/, "");
 }
 
 function isValidHttpsUrl(value) {
@@ -44,6 +48,43 @@ function isLikelyImageUrl(value) {
   const lower = value.toLowerCase();
   if (["logo", "icon", "sprite", "banner", "loading", "loader", "blank", "noimage", "no-image", "dummy", "placeholder", "map"].some((word) => lower.includes(word))) return false;
   return true;
+}
+
+function isSearchOrNonDetailUrl(url, source) {
+  const lower = String(url || "").toLowerCase();
+  const sourceUrl = normalizeUrl(source.url).toLowerCase();
+  if (!isValidHttpsUrl(url)) return true;
+  if (normalizeUrl(lower) === sourceUrl) return true;
+  if (lower.endsWith("#")) return true;
+  if (lower.includes("/company/") || lower.includes("/shop/") || lower.includes("/contact") || lower.includes("/inquiry")) return true;
+  if (lower.includes("/list/") || lower.includes("/result/") || lower.includes("/search/") || lower.includes("/theme/")) return true;
+  if (lower.includes("contentmode=senior") || lower.includes("currenttabindex=") || lower.includes("listtype=")) return true;
+  if (lower.includes("/kt_57/") || lower.includes("/featured/kourei/")) return true;
+  return false;
+}
+
+function detailUrlScore(url, text, source) {
+  if (isSearchOrNonDetailUrl(url, source)) return -999;
+
+  const lower = url.toLowerCase();
+  const label = normalizeText(text);
+  let score = 20;
+
+  if (label.includes("詳細")) score += 35;
+  if (label.includes("物件")) score += 20;
+  if (label.includes("部屋")) score += 12;
+  if (/\d{5,}/.test(lower)) score += 8;
+
+  if (source.id === "homemate" && /\/dtl-/i.test(url)) score += 140;
+  if (source.id === "ur" && /\/\d{2}_\d{4}(_room)?\.html/i.test(url)) score += 140;
+  if (source.id === "athome" && /\/chintai\/\d+/i.test(lower)) score += 140;
+  if (source.id === "able" && /(\/detail\/|detail\.do|\/chintai\/detail\/|bk=|\/chintai\/.+\/[a-z0-9_-]*\d{5,})/i.test(lower)) score += 140;
+  if (source.id === "f-takken" && /(\/detail|\/bukken\/|\/property\/|\/rent\/houses\/.+\/[0-9]+|\/items\/[0-9]+)/i.test(lower)) score += 140;
+
+  if (lower.includes("detail")) score += 30;
+  if (lower.includes("room")) score += 12;
+
+  return score;
 }
 
 function parseRent(text) {
@@ -127,7 +168,7 @@ function makeFallbackSourceLink(source) {
     walkLabel: "物件ごとに確認",
     score: source.id === "ur" ? 92 : 76,
     tags,
-    note: "詳細URLを取得できない場合の公式検索導線です。画像、物件名、住所、ボタンはすべてリンク付きです。",
+    note: "個別物件リンクを取得できなかったため、検索導線として保持しています。候補カードには表示しません。",
     listingUrl: source.url,
     sourceUrl: source.url,
     imageUrl: "",
@@ -145,14 +186,25 @@ async function safeText(locator) {
   }
 }
 
+async function pickDetailLink(node, source) {
+  const anchors = node.locator("a[href]");
+  const count = Math.min(await anchors.count().catch(() => 0), 30);
+  let best = { url: "", text: "", score: -999, locator: null };
+
+  for (let i = 0; i < count; i += 1) {
+    const anchor = anchors.nth(i);
+    const href = await anchor.getAttribute("href").catch(() => null);
+    const url = absoluteUrl(href, source.url);
+    const text = await safeText(anchor);
+    const score = detailUrlScore(url, text, source);
+    if (score > best.score) best = { url, text, score, locator: anchor };
+  }
+
+  return best.score >= 45 ? best : { url: "", text: "", score: best.score, locator: null };
+}
+
 async function collectImageUrl(node, baseUrl) {
-  const imageCandidates = [
-    "img",
-    "source[srcset]",
-    "[data-bg]",
-    "[data-background]",
-    "[style*=background-image]"
-  ];
+  const imageCandidates = ["img", "source[srcset]", "[data-bg]", "[data-background]", "[style*=background-image]"];
 
   for (const selector of imageCandidates) {
     const target = node.locator(selector).first();
@@ -226,24 +278,24 @@ async function collectCandidateCards(page, source) {
         const text = truncate(await safeText(node), 520);
         if (text.length < 30) continue;
 
-        const linkHandle = node.locator("a[href]").first();
-        const href = await linkHandle.getAttribute("href").catch(() => null);
-        const listingUrl = href ? new URL(href, source.url).toString() : source.url;
-        if (!isValidHttpsUrl(listingUrl)) continue;
+        const detailLink = await pickDetailLink(node, source);
+        const listingUrl = detailLink.url;
+        if (!listingUrl) continue;
 
-        let imageUrl = await collectImageUrl(node, source.url);
-        if (!imageUrl && listingUrl !== source.url && detailImageFetches < MAX_DETAIL_IMAGE_FETCHES_PER_SOURCE) {
+        let imageUrl = "";
+        if (detailImageFetches < MAX_DETAIL_IMAGE_FETCHES_PER_SOURCE) {
           detailImageFetches += 1;
           imageUrl = await collectDetailImageUrl(page.context(), listingUrl);
         }
+        if (!imageUrl) imageUrl = await collectImageUrl(node, source.url);
 
-        const titleCandidate = await safeText(linkHandle);
+        const titleCandidate = detailLink.text || await safeText(detailLink.locator || node.locator("a[href]").first());
         const title = truncate(titleCandidate || text.split(" ").slice(0, 8).join(" "), 60);
         const area = areaFromText(text);
         const parsedLayout = parseLayout(text);
         const rent = parseRent(text);
         const walk = parseWalk(text);
-        const tags = [source.name, listingUrl === source.url ? "リンク要確認" : "取得リンク", imageUrl ? "画像取得" : "画像要確認", parsedLayout.flexible ? "間取り要確認" : ""]
+        const tags = [source.name, "個別物件リンク", imageUrl ? "画像取得" : "画像要確認", parsedLayout.flexible ? "間取り要確認" : ""]
           .filter(Boolean);
         if (source.id === "ur") tags.push("UR", "保証人不要");
         if (["able", "f-takken", "homemate"].includes(source.id)) tags.push("高齢者相談可");
@@ -253,7 +305,7 @@ async function collectCandidateCards(page, source) {
           title,
           source: source.name,
           sourceId: source.id,
-          status: listingUrl === source.url ? "条件要確認 / 公式検索導線" : "自動取得候補 / 条件要確認",
+          status: "個別物件リンク取得 / 条件要確認",
           address: area,
           area,
           areaGroup: areaGroupFromArea(area),
@@ -270,7 +322,7 @@ async function collectCandidateCards(page, source) {
           listingUrl,
           sourceUrl: source.url,
           imageUrl,
-          matchStatus: listingUrl === source.url ? "source_link" : "needs_check"
+          matchStatus: "detail_link"
         };
         item.score = scoreListing(item);
         items.push(item);
@@ -318,6 +370,7 @@ async function scrapeSource(page, source) {
       startedAt,
       finishedAt: new Date().toISOString(),
       itemCount: outputItems.length,
+      detailCount: outputItems.filter((item) => item.matchStatus === "detail_link").length,
       imageCount: outputItems.filter((item) => Boolean(item.imageUrl)).length,
       items: outputItems
     };
@@ -331,6 +384,7 @@ async function scrapeSource(page, source) {
       finishedAt: new Date().toISOString(),
       error: error instanceof Error ? error.message : String(error),
       itemCount: 1,
+      detailCount: 0,
       imageCount: 0,
       items: [makeFallbackSourceLink(source)]
     };
@@ -363,6 +417,7 @@ async function main() {
       startedAt: result.startedAt,
       finishedAt: result.finishedAt,
       itemCount: result.itemCount,
+      detailCount: result.detailCount || 0,
       imageCount: result.imageCount || 0,
       error: result.error || null
     });
@@ -377,7 +432,12 @@ async function main() {
     .slice(0, 40);
 
   await fs.writeFile(propertiesPath, `${JSON.stringify(sorted, null, 2)}\n`, "utf8");
-  await fs.writeFile(diagnosticsPath, `${JSON.stringify({ ...diagnostics, itemCount: sorted.length, imageCount: sorted.filter((item) => Boolean(item.imageUrl)).length }, null, 2)}\n`, "utf8");
+  await fs.writeFile(diagnosticsPath, `${JSON.stringify({
+    ...diagnostics,
+    itemCount: sorted.length,
+    detailCount: sorted.filter((item) => item.matchStatus === "detail_link").length,
+    imageCount: sorted.filter((item) => Boolean(item.imageUrl)).length
+  }, null, 2)}\n`, "utf8");
 
   console.log(`Scraped ${sorted.length} listing/search records from ${sources.length} sources.`);
 }
