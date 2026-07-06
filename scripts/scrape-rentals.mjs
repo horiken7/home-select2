@@ -9,7 +9,9 @@ const propertiesPath = path.join(dataDir, "properties.json");
 const diagnosticsPath = path.join(dataDir, "scrape-diagnostics.json");
 
 const DEFAULT_TIMEOUT_MS = 30000;
+const DETAIL_TIMEOUT_MS = 15000;
 const MAX_TEXT_LENGTH = 260;
+const MAX_DETAIL_IMAGE_FETCHES_PER_SOURCE = 8;
 
 function normalizeText(value) {
   return String(value || "")
@@ -22,15 +24,26 @@ function truncate(value, length = MAX_TEXT_LENGTH) {
   return text.length > length ? `${text.slice(0, length)}...` : text;
 }
 
+function absoluteUrl(value, baseUrl) {
+  if (!value) return "";
+  const first = String(value).split(",")[0].trim().split(" ")[0].replace(/^['"]|['"]$/g, "");
+  if (!first || first.startsWith("data:") || first.startsWith("blob:")) return "";
+  try {
+    return new URL(first, baseUrl).toString();
+  } catch {
+    return "";
+  }
+}
+
 function isValidHttpsUrl(value) {
   return typeof value === "string" && value.startsWith("https://");
 }
 
 function isLikelyImageUrl(value) {
   if (!isValidHttpsUrl(value)) return false;
-  if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(value)) return true;
-  if (value.includes("image") || value.includes("photo") || value.includes("img")) return true;
-  return false;
+  const lower = value.toLowerCase();
+  if (["logo", "icon", "sprite", "banner", "loading", "loader", "blank", "noimage", "no-image", "dummy", "placeholder", "map"].some((word) => lower.includes(word))) return false;
+  return true;
 }
 
 function parseRent(text) {
@@ -70,23 +83,8 @@ function areaGroupFromArea(area) {
 
 function areaFromText(text) {
   const areaRules = [
-    "福岡市西区",
-    "福岡市早良区",
-    "福岡市城南区",
-    "福岡市中央区",
-    "福岡市博多区",
-    "福岡市東区",
-    "福岡市南区",
-    "糸島市",
-    "春日市",
-    "大野城市",
-    "那珂川市",
-    "古賀市",
-    "新宮町",
-    "粕屋町",
-    "志免町",
-    "太宰府市",
-    "宇美町"
+    "福岡市西区", "福岡市早良区", "福岡市城南区", "福岡市中央区", "福岡市博多区", "福岡市東区", "福岡市南区",
+    "糸島市", "春日市", "大野城市", "那珂川市", "古賀市", "新宮町", "粕屋町", "志免町", "太宰府市", "宇美町"
   ];
   return areaRules.find((area) => text.includes(area)) || "福岡県全域";
 }
@@ -109,7 +107,7 @@ function makeFallbackSourceLink(source) {
   const type = source.id === "ur" ? "public" : "private";
   const tags = source.id === "ur"
     ? ["UR", "保証人不要", "初期費用重視", "検索導線"]
-    : ["高齢者相談可", "検索導線", "条件要確認"];
+    : ["高齢者相談可", "検索導線", "条件要確認", "画像要確認"];
 
   const item = {
     id: `${source.id}-source-link`,
@@ -147,13 +145,12 @@ async function safeText(locator) {
   }
 }
 
-async function collectImageUrl(node, source) {
+async function collectImageUrl(node, baseUrl) {
   const imageCandidates = [
-    "img[src]",
-    "img[data-src]",
-    "img[data-original]",
-    "img[data-lazy]",
+    "img",
     "source[srcset]",
+    "[data-bg]",
+    "[data-background]",
     "[style*=background-image]"
   ];
 
@@ -162,38 +159,59 @@ async function collectImageUrl(node, source) {
     const count = await target.count().catch(() => 0);
     if (!count) continue;
 
-    const attrs = ["src", "data-src", "data-original", "data-lazy", "srcset"];
+    const attrs = ["src", "data-src", "data-original", "data-lazy", "data-srcset", "srcset", "data-bg", "data-background"];
     for (const attr of attrs) {
       const value = await target.getAttribute(attr).catch(() => null);
-      if (!value) continue;
-      const first = value.split(",")[0].trim().split(" ")[0];
-      const absolute = new URL(first, source.url).toString();
+      const absolute = absoluteUrl(value, baseUrl);
       if (isLikelyImageUrl(absolute)) return absolute;
     }
 
     const style = await target.getAttribute("style").catch(() => null);
     const match = style?.match(/url\(['"]?([^'")]+)['"]?\)/i);
-    if (match?.[1]) {
-      const absolute = new URL(match[1], source.url).toString();
-      if (isLikelyImageUrl(absolute)) return absolute;
-    }
+    const styleUrl = absoluteUrl(match?.[1], baseUrl);
+    if (isLikelyImageUrl(styleUrl)) return styleUrl;
   }
 
   return "";
 }
 
+async function collectPageImageUrl(page, baseUrl) {
+  const metaSelectors = [
+    'meta[property="og:image"]',
+    'meta[property="og:image:secure_url"]',
+    'meta[name="twitter:image"]',
+    'link[rel="image_src"]'
+  ];
+
+  for (const selector of metaSelectors) {
+    const loc = page.locator(selector).first();
+    const count = await loc.count().catch(() => 0);
+    if (!count) continue;
+    const value = await loc.getAttribute("content").catch(() => null) || await loc.getAttribute("href").catch(() => null);
+    const absolute = absoluteUrl(value, baseUrl);
+    if (isLikelyImageUrl(absolute)) return absolute;
+  }
+
+  return collectImageUrl(page.locator("body"), baseUrl);
+}
+
+async function collectDetailImageUrl(context, listingUrl) {
+  if (!isValidHttpsUrl(listingUrl) || listingUrl.endsWith("#") || listingUrl.includes("/company/")) return "";
+  const detailPage = await context.newPage();
+  try {
+    await detailPage.goto(listingUrl, { waitUntil: "domcontentloaded", timeout: DETAIL_TIMEOUT_MS });
+    await detailPage.waitForTimeout(1000);
+    return await collectPageImageUrl(detailPage, detailPage.url());
+  } catch {
+    return "";
+  } finally {
+    await detailPage.close().catch(() => {});
+  }
+}
+
 async function collectCandidateCards(page, source) {
   const locators = [
-    "article",
-    "li",
-    ".cassetteitem",
-    ".property-card",
-    ".mod-mergeBuilding",
-    ".box",
-    ".item",
-    "[class*=property]",
-    "[class*=bukken]",
-    "[class*=room]"
+    "article", "li", ".cassetteitem", ".property-card", ".mod-mergeBuilding", ".box", ".item", "[class*=property]", "[class*=bukken]", "[class*=room]"
   ];
 
   for (const selector of locators) {
@@ -201,6 +219,8 @@ async function collectCandidateCards(page, source) {
     if (count >= 3) {
       const items = [];
       const max = Math.min(count, 12);
+      let detailImageFetches = 0;
+
       for (let i = 0; i < max; i += 1) {
         const node = page.locator(selector).nth(i);
         const text = truncate(await safeText(node), 520);
@@ -211,7 +231,12 @@ async function collectCandidateCards(page, source) {
         const listingUrl = href ? new URL(href, source.url).toString() : source.url;
         if (!isValidHttpsUrl(listingUrl)) continue;
 
-        const imageUrl = await collectImageUrl(node, source);
+        let imageUrl = await collectImageUrl(node, source.url);
+        if (!imageUrl && listingUrl !== source.url && detailImageFetches < MAX_DETAIL_IMAGE_FETCHES_PER_SOURCE) {
+          detailImageFetches += 1;
+          imageUrl = await collectDetailImageUrl(page.context(), listingUrl);
+        }
+
         const titleCandidate = await safeText(linkHandle);
         const title = truncate(titleCandidate || text.split(" ").slice(0, 8).join(" "), 60);
         const area = areaFromText(text);
@@ -293,6 +318,7 @@ async function scrapeSource(page, source) {
       startedAt,
       finishedAt: new Date().toISOString(),
       itemCount: outputItems.length,
+      imageCount: outputItems.filter((item) => Boolean(item.imageUrl)).length,
       items: outputItems
     };
   } catch (error) {
@@ -305,6 +331,7 @@ async function scrapeSource(page, source) {
       finishedAt: new Date().toISOString(),
       error: error instanceof Error ? error.message : String(error),
       itemCount: 1,
+      imageCount: 0,
       items: [makeFallbackSourceLink(source)]
     };
   }
@@ -336,6 +363,7 @@ async function main() {
       startedAt: result.startedAt,
       finishedAt: result.finishedAt,
       itemCount: result.itemCount,
+      imageCount: result.imageCount || 0,
       error: result.error || null
     });
     allItems.push(...result.items);
@@ -349,7 +377,7 @@ async function main() {
     .slice(0, 40);
 
   await fs.writeFile(propertiesPath, `${JSON.stringify(sorted, null, 2)}\n`, "utf8");
-  await fs.writeFile(diagnosticsPath, `${JSON.stringify({ ...diagnostics, itemCount: sorted.length }, null, 2)}\n`, "utf8");
+  await fs.writeFile(diagnosticsPath, `${JSON.stringify({ ...diagnostics, itemCount: sorted.length, imageCount: sorted.filter((item) => Boolean(item.imageUrl)).length }, null, 2)}\n`, "utf8");
 
   console.log(`Scraped ${sorted.length} listing/search records from ${sources.length} sources.`);
 }
