@@ -1,0 +1,13 @@
+{
+  "name": "home-select2",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate:data": "node scripts/validate-data.mjs",
+    "scrape": "node scripts/scrape-rentals.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.0"
+  }
+}
