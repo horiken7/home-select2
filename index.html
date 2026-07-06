@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>福岡シニア賃貸横断サーチ | home-select2</title>
+  <meta name="description" content="定年後に福岡市または周辺地域で、夫婦2人暮らし向けの賃貸物件を横断検索するためのモックアップサイト。" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="topbar" aria-label="サイト内ナビゲーション">
+      <a class="brand" href="#top" aria-label="福岡シニア賃貸横断サーチの先頭へ戻る">
+        <span class="brand-icon">🏠</span>
+        <span>福岡シニア賃貸横断サーチ</span>
+      </a>
+      <div class="toplinks">
+        <a href="#search">検索条件</a>
+        <a href="#results">候補物件</a>
+        <a href="#sources">対象サイト</a>
+      </div>
+    </nav>
+
+    <section id="top" class="hero-grid">
+      <div>
+        <p class="eyebrow">home-select2 mockup</p>
+        <h1>定年後の福岡暮らしに向けて<br />賃貸候補を横断チェック</h1>
+        <p class="lead">
+          優さんとの2人暮らしを想定し、福岡市と周辺地域から
+          <strong>高齢者相談可 / 2LDK以上 / 管理費込み10万円以下</strong>を中心に候補を比較します。
+        </p>
+        <div class="hero-actions">
+          <a class="primary-link" href="#results">候補を見る</a>
+          <a class="secondary-link" href="#sources">対象サイトを確認</a>
+        </div>
+      </div>
+      <aside class="hero-card">
+        <span class="label">検索優先順位</span>
+        <ol>
+          <li>西区・早良区・城南区を最優先</li>
+          <li>南区・中央区・博多区・東区を比較</li>
+          <li>糸島市、春日市、大野城市など周辺も確認</li>
+          <li>UR・公的住宅・高齢者相談可を重視</li>
+        </ol>
+      </aside>
+    </section>
+  </header>
+
+  <main>
+    <section id="search" class="panel search-panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">search conditions</p>
+          <h2>🔎 検索条件</h2>
+          <p class="muted">今は静的モックです。条件を変えると、画面上のサンプル候補を絞り込みます。</p>
+        </div>
+        <button id="resetButton" class="ghost-button" type="button">初期条件に戻す</button>
+      </div>
+
+      <form class="filters" aria-label="賃貸物件の検索条件">
+        <label>
+          エリア
+          <select id="areaFilter">
+            <option value="all">福岡市＋周辺すべて</option>
+            <option value="priority">西区・早良区・城南区</option>
+            <option value="fukuoka_city">福岡市内</option>
+            <option value="suburb">福岡市周辺</option>
+          </select>
+        </label>
+        <label>
+          家賃上限
+          <select id="rentFilter">
+            <option value="8">8万円以下</option>
+            <option value="9">9万円以下</option>
+            <option value="10" selected>10万円以下</option>
+            <option value="12">12万円以下</option>
+          </select>
+        </label>
+        <label>
+          間取り
+          <select id="layoutFilter">
+            <option value="2" selected>2LDK以上</option>
+            <option value="3">3LDK以上</option>
+          </select>
+        </label>
+        <label>
+          駅徒歩
+          <select id="walkFilter">
+            <option value="10">10分以内</option>
+            <option value="15" selected>15分以内</option>
+            <option value="20">20分以内</option>
+            <option value="999">バス利用も含める</option>
+          </select>
+        </label>
+        <label>
+          住宅種別
+          <select id="typeFilter">
+            <option value="all">すべて</option>
+            <option value="public">UR・公的住宅</option>
+            <option value="private">一般賃貸</option>
+          </select>
+        </label>
+        <label>
+          重視条件
+          <select id="priorityFilter">
+            <option value="balanced">総合バランス</option>
+            <option value="senior">高齢者相談可を重視</option>
+            <option value="initialCost">初期費用を重視</option>
+            <option value="access">生活利便性を重視</option>
+          </select>
+        </label>
+      </form>
+    </section>
+
+    <section class="summary-row" aria-label="検索結果サマリー">
+      <article>
+        <span id="visibleCount">0</span>
+        <small>表示候補</small>
+      </article>
+      <article>
+        <span id="priorityArea">-</span>
+        <small>最上位エリア</small>
+      </article>
+      <article>
+        <span id="sourceCount">5</span>
+        <small>対象サイト</small>
+      </article>
+    </section>
+
+    <section id="results" class="panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">linked result cards</p>
+          <h2>🏘️ 候補物件・検索導線</h2>
+          <p class="muted">画像、物件名、住所、サイト名、ボタンはすべてリンク付きです。新しいタブで開きます。</p>
+        </div>
+        <span class="updated">モック作成日：2026-07-06</span>
+      </div>
+      <div id="cards" class="cards" aria-live="polite"></div>
+    </section>
+
+    <section id="sources" class="panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">target websites</p>
+          <h2>🌐 横断検索対象サイト</h2>
+          <p class="muted">現段階では公式検索ページへリンクします。実装後は各物件詳細URLをカードに格納します。</p>
+        </div>
+      </div>
+      <div id="sourceLinks" class="source-grid"></div>
+    </section>
+
+    <section class="panel roadmap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">next implementation</p>
+          <h2>🛠️ 次の実装ポイント</h2>
+        </div>
+      </div>
+      <div class="roadmap-grid">
+        <article>
+          <strong>Step 1</strong>
+          <h3>取得データの標準化</h3>
+          <p>サイトごとに物件名、家賃、間取り、住所、画像、詳細URLを同じ項目名にそろえます。</p>
+        </article>
+        <article>
+          <strong>Step 2</strong>
+          <h3>リンク必須チェック</h3>
+          <p>詳細URLがない候補は、カード表示しないか「リンク要確認」として別枠にします。</p>
+        </article>
+        <article>
+          <strong>Step 3</strong>
+          <h3>毎日監視</h3>
+          <p>GitHub Actionsで毎日取得し、新着、家賃変更、掲載終了を分かるようにします。</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© 2026 home-select2 / 福岡シニア賃貸横断サーチ</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
