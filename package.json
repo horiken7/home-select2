@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "validate:data": "node scripts/validate-data.mjs",
-    "scrape": "node scripts/scrape-rentals.mjs",
+    "scrape": "node scripts/scrape-rentals.mjs && node scripts/clean-rental-data.mjs",
     "clean:data": "node scripts/clean-rental-data.mjs"
   },
   "devDependencies": {
