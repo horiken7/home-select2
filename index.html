@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>福岡シニア賃貸横断サーチ | home-select2</title>
-  <meta name="description" content="定年後に福岡市または周辺地域で、夫婦2人暮らし向けの賃貸物件を横断検索するためのモックアップサイト。" />
+  <meta name="description" content="定年後に福岡市または周辺地域で、夫婦2人暮らし向けの賃貸物件を横断検索するサイト。" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="image-fit.css" />
 </head>
@@ -24,7 +24,7 @@
 
     <section id="top" class="hero-grid">
       <div>
-        <p class="eyebrow">home-select2 mockup</p>
+        <p class="eyebrow">home-select2 live data</p>
         <h1>定年後の福岡暮らしに向けて<br />賃貸候補を横断チェック</h1>
         <p class="lead">
           優さんとの2人暮らしを想定し、福岡市と周辺地域から
@@ -53,7 +53,7 @@
         <div>
           <p class="eyebrow">search conditions</p>
           <h2>🔎 検索条件</h2>
-          <p class="muted">今は静的モックです。条件を変えると、画面上のサンプル候補を絞り込みます。</p>
+          <p class="muted">GitHub Actionsで取得した候補を、条件に合わせて絞り込みます。</p>
         </div>
         <button id="resetButton" class="ghost-button" type="button">初期条件に戻す</button>
       </div>
@@ -135,7 +135,7 @@
           <h2>🏘️ 候補物件・検索導線</h2>
           <p class="muted">画像、物件名、住所、サイト名、ボタンはすべてリンク付きです。画像はタップで原寸表示できます。</p>
         </div>
-        <span class="updated">モック作成日：2026-07-06</span>
+        <span class="updated">データ更新日：2026-07-06</span>
       </div>
       <div id="cards" class="cards" aria-live="polite"></div>
     </section>
@@ -145,7 +145,7 @@
         <div>
           <p class="eyebrow">target websites</p>
           <h2>🌐 横断検索対象サイト</h2>
-          <p class="muted">現段階では公式検索ページへリンクします。実装後は各物件詳細URLをカードに格納します。</p>
+          <p class="muted">各サイトの検索結果ページも確認できます。候補カードは、取得できた個別物件リンクを優先表示します。</p>
         </div>
       </div>
       <div id="sourceLinks" class="source-grid"></div>
@@ -167,7 +167,7 @@
         <article>
           <strong>Step 2</strong>
           <h3>リンク必須チェック</h3>
-          <p>詳細URLがない候補は、カード表示しないか「リンク要確認」として別枠にします。</p>
+          <p>個別物件リンクが取れた候補を優先表示し、検索結果ページだけのデータは候補カードから外します。</p>
         </article>
         <article>
           <strong>Step 3</strong>
