@@ -12,6 +12,11 @@
     return Number.isNaN(time) ? 0 : time;
   }
 
+  function setNewSortDefault() {
+    const priorityFilter = document.querySelector('#priorityFilter');
+    if (priorityFilter) priorityFilter.value = 'newDesc';
+  }
+
   const originalSortCards = typeof sortCards === 'function' ? sortCards : null;
   if (!originalSortCards) return;
 
@@ -29,4 +34,17 @@
 
     return originalSortCards(cards, priority);
   };
+
+  window.addEventListener('load', () => {
+    setNewSortDefault();
+
+    const resetButton = document.querySelector('#resetButton');
+    resetButton?.addEventListener('click', () => {
+      setTimeout(() => {
+        setNewSortDefault();
+        if (typeof state === 'object') state.currentPage = 1;
+        if (typeof renderCards === 'function') renderCards();
+      }, 0);
+    });
+  });
 })();
