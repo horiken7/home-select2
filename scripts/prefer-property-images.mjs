@@ -30,36 +30,63 @@ function isHttps(url) {
   return typeof url === "string" && url.startsWith("https://");
 }
 
-function looksLikeBadImage(url, context = "") {
-  const text = `${url} ${context}`.toLowerCase();
-  const badWords = [
-    "logo", "icon", "sprite", "banner", "bnr", "campaign", "ad_", "advert", "cm_", "mainvisual", "mv_",
-    "ogp", "sns", "twitter", "facebook", "loading", "loader", "blank", "noimage", "no-image", "dummy",
-    "placeholder", "map", "staff", "person", "people", "model", "talent", "cast", "campaign", "brand", "ci_01"
-  ];
-  return badWords.some((word) => text.includes(word));
+function isUrItem(item) {
+  return item?.sourceId === "ur" || String(item?.source || "").includes("UR");
 }
 
-function imageScore(candidate) {
-  const text = `${candidate.url} ${candidate.alt} ${candidate.title} ${candidate.className} ${candidate.parentText}`.toLowerCase();
-  if (!isHttps(candidate.url)) return -999;
-  if (looksLikeBadImage(candidate.url, text)) return -250;
+function getUrCodes(item) {
+  const text = `${item?.listingUrl || ""} ${item?.sourceUrl || ""}`;
+  return Array.from(text.matchAll(/90_[0-9]{4}/g)).map((match) => match[0]);
+}
 
+function hasPropertyImageContext(candidate, item) {
+  const text = `${candidate.url} ${candidate.alt} ${candidate.title} ${candidate.className} ${candidate.parentText}`.toLowerCase();
+  const propertyWords = [
+    "間取り", "madori", "floorplan", "floor-plan", "layout", "plan", "roomplan",
+    "外観", "gaikan", "building", "exterior", "建物", "室内", "内観", "living", "kitchen", "bath", "toilet", "room", "interior", "photo", "gallery", "設備"
+  ];
+  if (propertyWords.some((word) => text.includes(word.toLowerCase()))) return true;
+
+  if (isUrItem(item)) {
+    const codes = getUrCodes(item);
+    if (codes.some((code) => text.includes(code.toLowerCase()))) return true;
+  }
+
+  return false;
+}
+
+function looksLikeNonPropertyImage(candidate, item) {
+  const text = `${candidate.url} ${candidate.alt} ${candidate.title} ${candidate.className} ${candidate.parentText}`.toLowerCase();
+  const badWords = [
+    "logo", "icon", "sprite", "banner", "bnr", "campaign", "advert", "mainvisual", "main-visual", "ogp", "sns",
+    "twitter", "facebook", "loading", "loader", "blank", "noimage", "no-image", "dummy", "placeholder", "map", "staff",
+    "brand", "ci_01", "yuruyaka", "kurashi", "tsunagaru", "de-a-ru"
+  ];
+  if (badWords.some((word) => text.includes(word))) return true;
+
+  if (isUrItem(item) && String(candidate.url || "").toLowerCase().includes("ur-net.go.jp")) {
+    return !hasPropertyImageContext(candidate, item);
+  }
+
+  return false;
+}
+
+function imageScore(candidate, item) {
+  if (!isHttps(candidate.url)) return -999;
+  if (looksLikeNonPropertyImage(candidate, item)) return -999;
+
+  const text = `${candidate.url} ${candidate.alt} ${candidate.title} ${candidate.className} ${candidate.parentText}`.toLowerCase();
   let score = 20;
 
-  const floorPlanWords = ["間取り", "madori", "floorplan", "floor-plan", "floor_plan", "layout", "plan", "heimen", "roomplan"];
-  const exteriorWords = ["外観", "gaikan", "building", "exterior", "appearance", "外装", "建物", "house", "mansion"];
-  const roomWords = ["室内", "内観", "living", "kitchen", "bath", "toilet", "room", "interior", "photo", "gallery", "equipment", "設備"];
+  if (["間取り", "madori", "floorplan", "floor-plan", "layout", "plan", "roomplan"].some((word) => text.includes(word.toLowerCase()))) score += 260;
+  if (["外観", "gaikan", "building", "exterior", "建物"].some((word) => text.includes(word.toLowerCase()))) score += 220;
+  if (["室内", "内観", "living", "kitchen", "bath", "toilet", "room", "interior", "photo", "gallery", "設備"].some((word) => text.includes(word.toLowerCase()))) score += 160;
 
-  if (floorPlanWords.some((word) => text.includes(word))) score += 260;
-  if (exteriorWords.some((word) => text.includes(word))) score += 220;
-  if (roomWords.some((word) => text.includes(word))) score += 160;
-
+  if (isUrItem(item) && hasPropertyImageContext(candidate, item)) score += 120;
   if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(candidate.url)) score += 30;
   if (candidate.width >= 400 || candidate.height >= 300) score += 35;
   if (candidate.width >= 800 || candidate.height >= 600) score += 45;
   if (candidate.width <= 120 && candidate.height <= 120) score -= 120;
-  if (text.includes("thumb") || text.includes("thumbnail")) score -= 10;
 
   return score;
 }
@@ -69,20 +96,22 @@ async function collectCandidates(page) {
     const items = [];
     const add = (url, element) => {
       if (!url) return;
-      const parent = element.closest("figure, article, li, div, section") || element.parentElement;
+      const parent = element.closest("figure, article, li, div, section, table, dl") || element.parentElement;
+      const grandParent = parent?.parentElement;
       items.push({
         url,
         alt: element.getAttribute("alt") || "",
         title: element.getAttribute("title") || "",
-        className: `${element.className || ""} ${parent?.className || ""}`,
-        parentText: (parent?.innerText || "").slice(0, 180),
+        className: `${element.className || ""} ${parent?.className || ""} ${grandParent?.className || ""}`,
+        parentText: `${parent?.innerText || ""} ${grandParent?.innerText || ""}`.slice(0, 360),
         width: Number(element.getAttribute("width") || element.naturalWidth || 0),
         height: Number(element.getAttribute("height") || element.naturalHeight || 0)
       });
     };
 
+    const imageAttrs = ["src", "data-src", "data-original", "data-lazy", "data-main", "data-large", "data-image", "data-url"];
     document.querySelectorAll("img").forEach((img) => {
-      ["src", "data-src", "data-original", "data-lazy", "data-main", "data-large", "data-image"].forEach((attr) => add(img.getAttribute(attr), img));
+      imageAttrs.forEach((attr) => add(img.getAttribute(attr), img));
       const srcset = img.getAttribute("srcset") || img.getAttribute("data-srcset") || "";
       srcset.split(",").forEach((entry) => add(entry.trim().split(/\s+/)[0], img));
     });
@@ -92,9 +121,19 @@ async function collectCandidates(page) {
       source.getAttribute("srcset").split(",").forEach((entry) => add(entry.trim().split(/\s+/)[0], img));
     });
 
+    document.querySelectorAll("a[href]").forEach((a) => {
+      const href = a.getAttribute("href") || "";
+      if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(href)) add(href, a);
+    });
+
     document.querySelectorAll("[style*='background-image']").forEach((el) => {
       const match = String(el.getAttribute("style") || "").match(/url\(['"]?([^'")]+)['"]?\)/i);
       if (match) add(match[1], el);
+    });
+
+    document.querySelectorAll("noscript").forEach((node) => {
+      const html = node.textContent || "";
+      Array.from(html.matchAll(/<img[^>]+(?:src|data-src)=["']([^"']+)["'][^>]*>/gi)).forEach((match) => add(match[1], node));
     });
 
     return items;
@@ -105,18 +144,15 @@ async function pickBestImage(context, item) {
   if (!isHttps(item.listingUrl)) return "";
   const page = await context.newPage();
   try {
-    await page.goto(item.listingUrl, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-    await page.waitForTimeout(1200);
+    await page.goto(item.listingUrl, { waitUntil: "networkidle", timeout: TIMEOUT_MS });
+    await page.waitForTimeout(1800);
     const rawCandidates = await collectCandidates(page);
     const candidates = rawCandidates
-      .map((candidate) => ({
-        ...candidate,
-        url: absoluteUrl(candidate.url, page.url())
-      }))
+      .map((candidate) => ({ ...candidate, url: absoluteUrl(candidate.url, page.url()) }))
       .filter((candidate) => isHttps(candidate.url));
 
     const ranked = candidates
-      .map((candidate) => ({ ...candidate, score: imageScore(candidate) }))
+      .map((candidate) => ({ ...candidate, score: imageScore(candidate, item) }))
       .filter((candidate) => candidate.score > 0)
       .sort((a, b) => b.score - a.score);
 
@@ -141,6 +177,9 @@ async function main() {
 
   for (const item of properties.slice(0, MAX_ITEMS)) {
     const bestImageUrl = await pickBestImage(context, item);
+    const currentCandidate = { url: item.imageUrl || "", alt: "", title: "", className: "", parentText: `${item.title || ""} ${item.source || ""}`, width: 0, height: 0 };
+    const currentLooksBad = looksLikeNonPropertyImage(currentCandidate, item);
+
     if (bestImageUrl && bestImageUrl !== item.imageUrl) {
       updated.push({
         ...item,
@@ -150,11 +189,11 @@ async function main() {
       });
       changed += 1;
     } else {
-      const currentLooksBad = looksLikeBadImage(item.imageUrl || "", `${item.title || ""} ${item.source || ""}`);
       updated.push({
         ...item,
         imageUrl: currentLooksBad ? "" : item.imageUrl,
-        imagePriority: currentLooksBad ? "removed_promotional_image" : item.imagePriority || "unchanged"
+        imagePriority: currentLooksBad ? "removed_non_property_image" : item.imagePriority || "unchanged",
+        imageNote: currentLooksBad ? "物件と無関係な広告・ブランド画像を除外" : item.imageNote
       });
       if (currentLooksBad) changed += 1;
     }
