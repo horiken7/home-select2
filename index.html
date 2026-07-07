@@ -28,7 +28,7 @@
         <h1>定年後の福岡暮らしに向けて<br />賃貸候補を横断チェック</h1>
         <p class="lead">
           優さんとの2人暮らしを想定し、福岡市と周辺地域から
-          <strong>高齢者相談可 / 2LDK以上 / 管理費込み10万円以下</strong>を中心に候補を比較します。
+          <strong>高齢者入居可・高齢者相談可 / 2LDK以上 / 管理費込み10万円以下</strong>を中心に候補を比較します。
         </p>
         <div class="hero-actions">
           <a class="primary-link" href="#results">候補を見る</a>
@@ -36,12 +36,12 @@
         </div>
       </div>
       <aside class="hero-card">
-        <span class="label">検索優先順位</span>
+        <span class="label">検索の前提</span>
         <ol>
+          <li>高齢者入居可・高齢者相談可の物件を前提に検索</li>
           <li>西区・早良区・城南区を最優先</li>
           <li>南区・中央区・博多区・東区を比較</li>
-          <li>糸島市、春日市、大野城市など周辺も確認</li>
-          <li>UR・公的住宅・高齢者相談可を重視</li>
+          <li>UR・公的住宅も候補として確認</li>
         </ol>
       </aside>
     </section>
@@ -53,7 +53,7 @@
         <div>
           <p class="eyebrow">search conditions</p>
           <h2>🔎 検索条件</h2>
-          <p class="muted">GitHub Actionsで取得した候補を、条件に合わせて絞り込みます。</p>
+          <p class="muted">このサイトは、高齢者入居可・高齢者相談可の検索結果を前提に、GitHub Actionsで取得した候補を条件に合わせて絞り込みます。</p>
         </div>
         <button id="resetButton" class="ghost-button" type="button">初期条件に戻す</button>
       </div>
@@ -102,12 +102,12 @@
           </select>
         </label>
         <label>
-          重視条件
+          並び替え条件
           <select id="priorityFilter">
             <option value="balanced">総合バランス</option>
-            <option value="senior">高齢者相談可を重視</option>
             <option value="initialCost">初期費用を重視</option>
             <option value="access">生活利便性を重視</option>
+            <option value="public">UR・公的住宅を重視</option>
           </select>
         </label>
       </form>
@@ -133,7 +133,7 @@
         <div>
           <p class="eyebrow">linked result cards</p>
           <h2>🏘️ 候補物件・検索導線</h2>
-          <p class="muted">画像、物件名、住所、サイト名、ボタンはすべてリンク付きです。画像はタップで原寸表示できます。</p>
+          <p class="muted">候補カードは高齢者入居可・高齢者相談可の検索結果を前提に表示します。画像はタップで原寸表示できます。</p>
         </div>
         <span class="updated">データ更新日：2026-07-06</span>
       </div>
@@ -145,7 +145,7 @@
         <div>
           <p class="eyebrow">target websites</p>
           <h2>🌐 横断検索対象サイト</h2>
-          <p class="muted">各サイトの検索結果ページも確認できます。候補カードは、取得できた個別物件リンクを優先表示します。</p>
+          <p class="muted">高齢者向け・高齢者相談可・高齢者入居可の検索ページを対象にしています。URは公的賃貸候補として比較対象に含めます。</p>
         </div>
       </div>
       <div id="sourceLinks" class="source-grid"></div>
