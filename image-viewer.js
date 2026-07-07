@@ -1,14 +1,49 @@
-function isPromotionalOrBadImage(url) {
+function isUrSource(link) {
+  return String(link.dataset.source || '').includes('UR');
+}
+
+function isLikelyUrPropertyImage(url) {
   const lower = String(url || '').toLowerCase();
+  if (!lower.includes('ur-net.go.jp')) return false;
+
+  return [
+    'madori',
+    'floor',
+    'plan',
+    'room',
+    'photo',
+    'gaikan',
+    'building',
+    'bukken',
+    'equipment',
+    'layout',
+    '90_'
+  ].some((word) => lower.includes(word));
+}
+
+function isPromotionalOrBadImage(url, link) {
+  const lower = String(url || '').toLowerCase();
+  const context = `${link?.dataset?.source || ''} ${link?.title || ''}`.toLowerCase();
+
+  if (isUrSource(link) && lower.includes('ur-net.go.jp') && !isLikelyUrPropertyImage(lower)) {
+    return true;
+  }
+
   return [
     '/img/ogp/',
+    '/chintai/img/',
     'common/image/render/img-src.png',
     'logo',
     'icon',
     'sprite',
     'banner',
+    'bnr',
     'campaign',
     'advert',
+    'mainvisual',
+    'main-visual',
+    'catch',
+    'brand',
     'ogp',
     'sns',
     'twitter',
@@ -27,15 +62,20 @@ function isPromotionalOrBadImage(url) {
     'model',
     'talent',
     'cast',
+    'yuruyaka',
+    'kurashi',
+    'tsunagaru',
+    'ur-de-a-ru',
+    'de-a-ru',
     'ci_01'
-  ].some((word) => lower.includes(word));
+  ].some((word) => lower.includes(word) || context.includes(word));
 }
 
 function replaceBadImageWithPlaceholder(link, image) {
   link.classList.remove('has-real-image');
   link.classList.add('has-placeholder', 'image-filtered');
   link.href = link.dataset.originalHref || link.href;
-  link.title = '広告・人物画像を除外しました。物件詳細はリンク先で確認してください。';
+  link.title = '広告・ブランド画像を除外しました。物件画像はリンク先で確認してください。';
   link.setAttribute('aria-label', '物件詳細を開く');
   image.remove();
   if (!link.querySelector('.image-placeholder-text')) {
@@ -50,7 +90,7 @@ function enableImageViewer() {
 
     if (!link.dataset.originalHref) link.dataset.originalHref = link.href;
 
-    if (isPromotionalOrBadImage(image.src)) {
+    if (isPromotionalOrBadImage(image.src, link)) {
       replaceBadImageWithPlaceholder(link, image);
       return;
     }
