@@ -83,21 +83,22 @@ prefer = prefer.replace(
   if (isClearlyPromotional(candidate)) return -999;`
 );
 
-prefer = prefer.replace(
-  `    const bestImageUrl = await pickBestImage(context, item);
+const oldBlock = `    const bestImageUrl = await pickBestImage(context, item);
     const urScreenshotUrl = !bestImageUrl && isUrItem(item) ? await screenshotBestUrElement(context, item) : "";
     const selectedImageUrl = bestImageUrl || urScreenshotUrl;
     const currentCandidate = { url: item.imageUrl || "", alt: "", title: "", className: "", parentText: \`${item.title || ""} ${item.source || ""}\`, width: 0, height: 0 };
-    const currentLooksBad = isLocalImage(item.imageUrl) ? false : isClearlyPromotional(currentCandidate);`,
-  `    const bestImageUrl = await pickBestImage(context, item);
+    const currentLooksBad = isLocalImage(item.imageUrl) ? false : isClearlyPromotional(currentCandidate);`;
+
+const newBlock = `    const bestImageUrl = await pickBestImage(context, item);
     const bestImageIsInvalid = isInvalidImageUrl(bestImageUrl);
     const currentImageIsInvalid = isInvalidImageUrl(item.imageUrl || "");
     const needsUrFallback = isUrItem(item) && (bestImageIsInvalid || currentImageIsInvalid);
     const urScreenshotUrl = needsUrFallback ? await screenshotBestUrElement(context, item) : "";
     const selectedImageUrl = !bestImageIsInvalid ? bestImageUrl : urScreenshotUrl;
     const currentCandidate = { url: item.imageUrl || "", alt: "", title: "", className: "", parentText: \`${item.title || ""} ${item.source || ""}\`, width: 0, height: 0 };
-    const currentLooksBad = isLocalImage(item.imageUrl) ? false : (currentImageIsInvalid || isClearlyPromotional(currentCandidate));`
-);
+    const currentLooksBad = isLocalImage(item.imageUrl) ? false : (currentImageIsInvalid || isClearlyPromotional(currentCandidate));`;
+
+prefer = prefer.replace(oldBlock, newBlock);
 
 await fs.writeFile(preferPath, prefer, "utf8");
 console.log("Image filtering patched: tracking URLs are ignored and UR screenshot fallback is forced when needed.");
