@@ -90,8 +90,10 @@ function isUrListing(item) {
 
 function isUsableImageUrl(url) {
   if (!url) return false;
-  if (!String(url).startsWith("https://")) return false;
-  return true;
+  const text = String(url);
+  if (text.startsWith("https://")) return true;
+  if (text.startsWith("data/images/")) return true;
+  return false;
 }
 
 function isSameUrl(a, b) {
