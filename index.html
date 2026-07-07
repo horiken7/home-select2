@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="image-fit.css" />
   <link rel="stylesheet" href="tile-extra.css" />
   <link rel="stylesheet" href="pagination.css" />
+  <link rel="stylesheet" href="new-info.css" />
 </head>
 <body>
   <header class="hero">
@@ -18,6 +19,7 @@
         <span>福岡シニア賃貸横断サーチ</span>
       </a>
       <div class="toplinks">
+        <a href="#updates">新着情報</a>
         <a href="#search">検索条件</a>
         <a href="#results">候補物件</a>
         <a href="#sources">対象サイト</a>
@@ -50,6 +52,33 @@
   </header>
 
   <main>
+    <section id="updates" class="panel update-panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">new information</p>
+          <h2>🆕 新着情報</h2>
+          <p class="muted">初めて検出した新規物件と、各検索サイトで確認できた新着・更新情報を表示します。</p>
+        </div>
+        <span id="updatesGeneratedAt" class="updated">更新確認中</span>
+      </div>
+      <div class="update-grid">
+        <article class="new-count-card">
+          <span class="new-count-label">新規物件</span>
+          <strong id="newListingCount">0件</strong>
+          <p id="newListingMessage">新規物件を確認中です。</p>
+        </article>
+        <article class="site-news-card">
+          <div class="site-news-head">
+            <span>検索サイトの新着情報</span>
+            <small id="siteNewsCount">0件</small>
+          </div>
+          <div id="siteNewsList" class="site-news-list" aria-live="polite">
+            <p class="muted">新着情報を読み込み中です。</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <section id="search" class="panel search-panel">
       <div class="section-head">
         <div>
