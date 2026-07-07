@@ -60,7 +60,7 @@ function textLink(url, className, text, label) {
 }
 
 function badgeClass(tag) {
-  if (["UR", "保証人不要", "高齢者相談可", "高齢者入居可", "初期費用重視", "画像取得"].includes(tag)) return "green";
+  if (["UR", "保証人不要", "高齢者相談可", "高齢者入居可", "高齢者入居可・相談可", "個別物件リンク", "初期費用重視", "画像取得"].includes(tag)) return "green";
   if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認", "間取り要確認", "画像要確認"].includes(tag)) return "orange";
   if (["取得失敗", "条件外"].includes(tag)) return "red";
   return "";
@@ -193,11 +193,16 @@ function scoreByPriority(item, priority) {
   let score = Number(item.score) || 0;
   const tags = Array.isArray(item.tags) ? item.tags : [];
 
-  if (priority === "senior" && tags.some((tag) => tag.includes("高齢者"))) score += 8;
-  if (priority === "initialCost" && tags.includes("初期費用重視")) score += 10;
+  if (priority === "initialCost" && (tags.includes("初期費用重視") || item.type === "public")) score += 10;
   if (priority === "access" && Number(item.walk) <= 15) score += 8;
+  if (priority === "public" && item.type === "public") score += 12;
 
   return Math.min(score, 100);
+}
+
+function getEligibilityTags(item) {
+  if (item.type === "public" || item.sourceId === "ur") return ["UR・公的賃貸"];
+  return ["高齢者入居可・相談可"];
 }
 
 function renderCards() {
@@ -235,7 +240,7 @@ function renderImageMarkup(item, cardTitle) {
 }
 
 function renderCard(item, index) {
-  const tags = Array.isArray(item.tags) ? item.tags : [];
+  const tags = Array.from(new Set([...getEligibilityTags(item), ...(Array.isArray(item.tags) ? item.tags : [])]));
   const { detailUrl, searchUrl, cardLinkUrl } = getUrls(item);
   const accuracy = getAccuracy(item, detailUrl, searchUrl);
   const cardTitle = displayTitle(item);
