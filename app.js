@@ -62,9 +62,9 @@ function textLink(url, className, text, label) {
 }
 
 function badgeClass(tag) {
-  if (["UR", "保証人不要", "高齢者相談可", "高齢者入居可", "高齢者入居可・相談可", "個別物件リンク", "初期費用重視", "画像取得", "エレベーターあり"].includes(tag)) return "green";
-  if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認", "間取り要確認", "画像要確認", "階数要確認", "EV要確認"].includes(tag)) return "orange";
-  if (["取得失敗", "条件外", "エレベーターなし"].includes(tag)) return "red";
+  if (["UR", "保証人不要", "高齢者相談可", "高齢者入居可", "高齢者入居可・相談可", "個別物件リンク", "初期費用重視", "画像取得", "エレベーターあり", "家賃値下げ"].includes(tag)) return "green";
+  if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認", "間取り要確認", "画像要確認", "階数要確認", "EV要確認", "家賃変更"].includes(tag)) return "orange";
+  if (["取得失敗", "条件外", "エレベーターなし", "家賃値上げ"].includes(tag)) return "red";
   return "";
 }
 
@@ -259,6 +259,24 @@ function getSpecialNotes(item) {
   return notes.slice(0, 4);
 }
 
+function getRentChangeMarkup(item) {
+  if (!item.rentChanged || !item.rentChange) return "";
+  const change = item.rentChange;
+  const directionClass = change.direction === "up" ? "up" : "down";
+  const directionLabel = change.direction === "up" ? "値上げ" : "値下げ";
+  const previous = change.previousRentLabel || `${change.previousRent}万円`;
+  const current = change.currentRentLabel || `${change.currentRent}万円`;
+  const diff = Number(change.difference || 0);
+  const diffLabel = change.direction === "up" ? `+${Math.abs(diff)}万円` : `-${Math.abs(diff)}万円`;
+
+  return `
+    <div class="rent-change rent-change-${directionClass}">
+      <span>家賃変更</span>
+      <strong>${escapeHtml(previous)} → ${escapeHtml(current)}</strong>
+      <small>${escapeHtml(directionLabel)} ${escapeHtml(diffLabel)}</small>
+    </div>`;
+}
+
 function pageCount(total) {
   return Math.max(1, Math.ceil(total / state.perPage));
 }
@@ -352,10 +370,12 @@ function renderCard(item, index) {
   const floorLabel = getFloorLabel(item);
   const elevatorLabel = getElevatorLabel(item);
   const specialNotes = getSpecialNotes(item);
+  const rentChangeMarkup = getRentChangeMarkup(item);
   const classes = [
     "property-card",
     index === 0 ? "best" : "",
     item.type === "public" ? "public" : "",
+    item.rentChanged ? "rent-changed" : "",
     accuracy.className === "check" ? "needs-check" : ""
   ].join(" ").trim();
   const imageMarkup = renderImageMarkup(item, cardTitle);
@@ -391,6 +411,8 @@ function renderCard(item, index) {
           <div class="key-fact walk"><span>駅から徒歩時間</span><strong>${escapeHtml(item.walkLabel)}</strong></div>
           <div class="key-fact floor"><span>階数・エレベーター</span><strong>${escapeHtml(floorLabel)} / ${escapeHtml(elevatorLabel)}</strong></div>
         </div>
+
+        ${rentChangeMarkup}
 
         <div class="address-box">
           <span>住所・エリア</span>
