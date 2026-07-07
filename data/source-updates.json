@@ -1,0 +1,14 @@
+{
+  "generatedAt": "2026-07-07T00:00:00+09:00",
+  "notices": [
+    {
+      "sourceId": "nicety",
+      "sourceName": "ニセティ / NICE TY",
+      "title": "監視対象に追加：空き状況の更新を確認します",
+      "summary": "現在は空きなし想定。募集・空室・入居情報の更新が出た場合に新着情報として表示します。",
+      "url": "https://www.nicety.or.jp/",
+      "type": "watch",
+      "detectedAt": "2026-07-07T00:00:00+09:00"
+    }
+  ]
+}
