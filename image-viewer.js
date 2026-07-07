@@ -17,21 +17,17 @@ function isLikelyUrPropertyImage(url) {
     'bukken',
     'equipment',
     'layout',
-    '90_'
+    '90_',
+    'jkss',
+    '0000'
   ].some((word) => lower.includes(word));
 }
 
-function isPromotionalOrBadImage(url, link) {
+function isClearlyPromotionalImage(url, link) {
   const lower = String(url || '').toLowerCase();
   const context = `${link?.dataset?.source || ''} ${link?.title || ''}`.toLowerCase();
-
-  if (isUrSource(link) && lower.includes('ur-net.go.jp') && !isLikelyUrPropertyImage(lower)) {
-    return true;
-  }
-
   return [
     '/img/ogp/',
-    '/chintai/img/',
     'common/image/render/img-src.png',
     'logo',
     'icon',
@@ -69,6 +65,17 @@ function isPromotionalOrBadImage(url, link) {
     'de-a-ru',
     'ci_01'
   ].some((word) => lower.includes(word) || context.includes(word));
+}
+
+function isPromotionalOrBadImage(url, link) {
+  const lower = String(url || '').toLowerCase();
+
+  if (isUrSource(link) && lower.includes('ur-net.go.jp')) {
+    if (isClearlyPromotionalImage(url, link)) return true;
+    return false;
+  }
+
+  return isClearlyPromotionalImage(url, link);
 }
 
 function replaceBadImageWithPlaceholder(link, image) {
