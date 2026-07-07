@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="image-fit.css" />
   <link rel="stylesheet" href="tile-extra.css" />
+  <link rel="stylesheet" href="pagination.css" />
 </head>
 <body>
   <header class="hero">
@@ -137,11 +138,17 @@
         <div>
           <p class="eyebrow">linked result cards</p>
           <h2>🏘️ 候補物件・検索導線</h2>
-          <p class="muted">候補カードは高齢者入居可・高齢者相談可の検索結果を前提に表示します。画像はタップで原寸表示できます。</p>
+          <p class="muted">候補カードは高齢者入居可・高齢者相談可の検索結果を前提に表示します。1ページ10件ずつ表示します。</p>
         </div>
         <span class="updated">データ更新日：2026-07-06</span>
       </div>
       <div id="cards" class="cards" aria-live="polite"></div>
+      <nav id="pagination" class="pagination" aria-label="候補物件のページ送り" hidden>
+        <button id="prevPage" type="button" class="page-button">前へ</button>
+        <div id="pageNumbers" class="page-numbers" aria-label="ページ番号"></div>
+        <button id="nextPage" type="button" class="page-button">次へ</button>
+        <span id="pageInfo" class="page-info">1 / 1</span>
+      </nav>
     </section>
 
     <section id="sources" class="panel">
