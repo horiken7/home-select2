@@ -1,7 +1,9 @@
 const state = {
   targetSites: [],
   listings: [],
-  loadError: null
+  loadError: null,
+  currentPage: 1,
+  perPage: 10
 };
 
 const qs = (selector) => document.querySelector(selector);
@@ -257,12 +259,53 @@ function getSpecialNotes(item) {
   return notes.slice(0, 4);
 }
 
+function pageCount(total) {
+  return Math.max(1, Math.ceil(total / state.perPage));
+}
+
+function renderPagination(total, totalPages) {
+  const pagination = qs("#pagination");
+  const prevButton = qs("#prevPage");
+  const nextButton = qs("#nextPage");
+  const pageInfo = qs("#pageInfo");
+  const pageNumbers = qs("#pageNumbers");
+
+  if (!pagination || !prevButton || !nextButton || !pageInfo || !pageNumbers) return;
+
+  if (total <= state.perPage) {
+    pagination.hidden = true;
+    pageNumbers.innerHTML = "";
+    return;
+  }
+
+  pagination.hidden = false;
+  prevButton.disabled = state.currentPage <= 1;
+  nextButton.disabled = state.currentPage >= totalPages;
+  pageInfo.textContent = `${state.currentPage} / ${totalPages}ページ（全${total}件）`;
+
+  pageNumbers.innerHTML = Array.from({ length: totalPages }, (_, index) => {
+    const page = index + 1;
+    const current = page === state.currentPage ? " current" : "";
+    return `<button type="button" class="page-number${current}" data-page="${page}" aria-current="${page === state.currentPage ? "page" : "false"}">${page}</button>`;
+  }).join("");
+}
+
+function setPage(page) {
+  const filter = getFilterValues();
+  const total = state.listings.filter((item) => matches(item, filter)).length;
+  const totalPages = pageCount(total);
+  state.currentPage = Math.min(Math.max(1, page), totalPages);
+  renderCards();
+  qs("#results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function renderCards() {
   const container = qs("#cards");
   if (state.loadError) {
     container.innerHTML = `<div class="empty">${escapeHtml(state.loadError)}</div>`;
     qs("#visibleCount").textContent = "0";
     qs("#priorityArea").textContent = "-";
+    renderPagination(0, 1);
     return;
   }
 
@@ -274,15 +317,23 @@ function renderCards() {
     filter.priority
   );
 
-  qs("#visibleCount").textContent = cards.length;
+  const total = cards.length;
+  const totalPages = pageCount(total);
+  state.currentPage = Math.min(Math.max(1, state.currentPage), totalPages);
+  const start = (state.currentPage - 1) * state.perPage;
+  const pageCards = cards.slice(start, start + state.perPage);
+
+  qs("#visibleCount").textContent = total;
   qs("#priorityArea").textContent = cards[0]?.area || "-";
 
   if (!cards.length) {
     container.innerHTML = `<div class="empty">条件に合う候補がありません。家賃上限、駅徒歩、エリア条件を少し広げてください。</div>`;
+    renderPagination(0, 1);
     return;
   }
 
-  container.innerHTML = cards.map((item, index) => renderCard(item, index)).join("");
+  container.innerHTML = pageCards.map((item, index) => renderCard(item, start + index)).join("");
+  renderPagination(total, totalPages);
 }
 
 function renderImageMarkup(item, cardTitle) {
@@ -391,7 +442,11 @@ function renderSources() {
   `).join("");
 }
 
-Object.values(filters).forEach((element) => element.addEventListener("change", renderCards));
+Object.values(filters).forEach((element) => element.addEventListener("change", () => {
+  state.currentPage = 1;
+  renderCards();
+}));
+
 qs("#resetButton").addEventListener("click", () => {
   filters.area.value = "all";
   filters.rent.value = "10";
@@ -399,7 +454,16 @@ qs("#resetButton").addEventListener("click", () => {
   filters.walk.value = "15";
   filters.type.value = "all";
   filters.priority.value = "balanced";
+  state.currentPage = 1;
   renderCards();
+});
+
+qs("#prevPage")?.addEventListener("click", () => setPage(state.currentPage - 1));
+qs("#nextPage")?.addEventListener("click", () => setPage(state.currentPage + 1));
+qs("#pageNumbers")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-page]");
+  if (!button) return;
+  setPage(Number(button.dataset.page));
 });
 
 loadData();
