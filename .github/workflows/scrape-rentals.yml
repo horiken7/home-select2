@@ -38,4 +38,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Update scraped rental data"
-          file_pattern: data/properties.json data/scrape-diagnostics.json
+          file_pattern: data/properties.json data/scrape-diagnostics.json data/listing-history.json data/source-updates.json
