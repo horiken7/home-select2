@@ -44,6 +44,47 @@ function listingKey(item) {
   return normalizeUrl(item?.listingUrl) || `${item?.sourceId || "unknown"}:${item?.title || "untitled"}:${item?.rentLabel || ""}`;
 }
 
+function isKnownRent(value) {
+  const rent = Number(value);
+  return Number.isFinite(rent) && rent !== 999;
+}
+
+function roundRent(value) {
+  return Math.round(Number(value) * 100) / 100;
+}
+
+function formatRent(value) {
+  if (!isKnownRent(value)) return "家賃要確認";
+  return `${roundRent(value)}万円`;
+}
+
+function buildRentChange(previous, item, generatedAt) {
+  const previousRent = Number(previous?.rent);
+  const currentRent = Number(item.rent);
+  if (!previous || !isKnownRent(previousRent) || !isKnownRent(currentRent)) return null;
+
+  const previousRounded = roundRent(previousRent);
+  const currentRounded = roundRent(currentRent);
+  if (previousRounded === currentRounded) return null;
+
+  const difference = roundRent(currentRounded - previousRounded);
+  const direction = difference > 0 ? "up" : "down";
+  const label = direction === "up"
+    ? `家賃変更：${formatRent(previousRounded)} → ${formatRent(currentRounded)}（値上げ +${Math.abs(difference)}万円）`
+    : `家賃変更：${formatRent(previousRounded)} → ${formatRent(currentRounded)}（値下げ -${Math.abs(difference)}万円）`;
+
+  return {
+    changedAt: generatedAt,
+    previousRent: previousRounded,
+    currentRent: currentRounded,
+    previousRentLabel: previous?.rentLabel || formatRent(previousRounded),
+    currentRentLabel: item.rentLabel || formatRent(currentRounded),
+    difference,
+    direction,
+    label
+  };
+}
+
 async function readJsonFile(filePath, fallbackValue) {
   try {
     return JSON.parse(await fs.readFile(filePath, "utf8"));
@@ -61,13 +102,24 @@ function applyListingHistory(items, oldHistory, generatedAt) {
   };
 
   let newCount = 0;
+  let rentChangeCount = 0;
   const trackedItems = items.map((item) => {
     const key = listingKey(item);
     const previous = previousItems[key];
     const isNew = !previous;
+    const rentChange = buildRentChange(previous, item, generatedAt);
+    const rentChanged = Boolean(rentChange);
     if (isNew) newCount += 1;
+    if (rentChanged) rentChangeCount += 1;
 
-    const tags = Array.from(new Set([...(item.tags || []).filter((tag) => tag !== "NEW"), ...(isNew ? ["NEW"] : [])]));
+    const changeTags = rentChanged
+      ? ["家賃変更", rentChange.direction === "up" ? "家賃値上げ" : "家賃値下げ"]
+      : [];
+    const tags = Array.from(new Set([
+      ...(item.tags || []).filter((tag) => !["NEW", "家賃変更", "家賃値上げ", "家賃値下げ"].includes(tag)),
+      ...(isNew ? ["NEW"] : []),
+      ...changeTags
+    ]));
     const firstSeenAt = previous?.firstSeenAt || generatedAt;
     const seenCount = Number(previous?.seenCount || 0) + 1;
 
@@ -79,7 +131,11 @@ function applyListingHistory(items, oldHistory, generatedAt) {
       sourceId: item.sourceId,
       title: item.title,
       listingUrl: item.listingUrl,
+      rent: isKnownRent(item.rent) ? roundRent(item.rent) : item.rent,
       rentLabel: item.rentLabel,
+      previousRent: previous?.rent,
+      previousRentLabel: previous?.rentLabel,
+      lastRentChange: rentChange || previous?.lastRentChange || null,
       area: item.area
     };
 
@@ -87,13 +143,17 @@ function applyListingHistory(items, oldHistory, generatedAt) {
       ...item,
       tags,
       isNew,
+      rentChanged,
+      rentChange,
+      previousRent: rentChange?.previousRent ?? previous?.rent ?? null,
+      previousRentLabel: rentChange?.previousRentLabel ?? previous?.rentLabel ?? null,
       firstSeenAt,
       lastSeenAt: generatedAt,
       seenCount
     };
   });
 
-  return { trackedItems, nextHistory, newCount };
+  return { trackedItems, nextHistory, newCount, rentChangeCount };
 }
 
 function isValidHttpsUrl(value) {
@@ -226,6 +286,7 @@ function scoreListing(item) {
   if (item.type === "public") score += 16;
   if (item.tags?.some((tag) => tag.includes("高齢者"))) score += 12;
   if (item.isNew) score += 6;
+  if (item.rentChanged) score += 4;
   if (Number(item.rent) <= 10) score += 8;
   if (Number(item.walk) <= 15) score += 8;
   if (item.elevatorLabel === "エレベーターあり") score += 4;
@@ -408,14 +469,14 @@ async function main() {
 
   const history = await readJsonFile(historyPath, { createdAt: diagnostics.generatedAt, updatedAt: diagnostics.generatedAt, items: {} });
   const sorted = dedupe(allItems).sort((a, b) => Number(b.score) - Number(a.score)).slice(0, MAX_OUTPUT_ITEMS);
-  const { trackedItems, nextHistory, newCount } = applyListingHistory(sorted, history, diagnostics.generatedAt);
+  const { trackedItems, nextHistory, newCount, rentChangeCount } = applyListingHistory(sorted, history, diagnostics.generatedAt);
   trackedItems.forEach((item) => { item.score = scoreListing(item); });
   trackedItems.sort((a, b) => Number(b.score) - Number(a.score));
 
   await fs.writeFile(propertiesPath, `${JSON.stringify(trackedItems, null, 2)}\n`, "utf8");
   await fs.writeFile(historyPath, `${JSON.stringify(nextHistory, null, 2)}\n`, "utf8");
-  await fs.writeFile(diagnosticsPath, `${JSON.stringify({ ...diagnostics, itemCount: trackedItems.length, detailCount: trackedItems.filter((item) => item.matchStatus === "detail_link").length, imageCount: trackedItems.filter((item) => Boolean(item.imageUrl)).length, newCount }, null, 2)}\n`, "utf8");
-  console.log(`Scraped ${trackedItems.length} listing/search records from ${sources.length} sources. New listings: ${newCount}.`);
+  await fs.writeFile(diagnosticsPath, `${JSON.stringify({ ...diagnostics, itemCount: trackedItems.length, detailCount: trackedItems.filter((item) => item.matchStatus === "detail_link").length, imageCount: trackedItems.filter((item) => Boolean(item.imageUrl)).length, newCount, rentChangeCount }, null, 2)}\n`, "utf8");
+  console.log(`Scraped ${trackedItems.length} listing/search records from ${sources.length} sources. New listings: ${newCount}. Rent changes: ${rentChangeCount}.`);
 }
 
 main().catch((error) => {
