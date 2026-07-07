@@ -200,6 +200,30 @@ function scoreByPriority(item, priority) {
   return Math.min(score, 100);
 }
 
+function rentSortValue(item) {
+  const rent = Number(item.rent);
+  return isUnknownValue(rent) ? Number.POSITIVE_INFINITY : rent;
+}
+
+function sortCards(cards, priority) {
+  if (priority === "rentAsc") {
+    return cards.sort((a, b) => rentSortValue(a) - rentSortValue(b) || b.displayScore - a.displayScore);
+  }
+
+  if (priority === "rentDesc") {
+    return cards.sort((a, b) => {
+      const aRent = rentSortValue(a);
+      const bRent = rentSortValue(b);
+      if (!Number.isFinite(aRent) && !Number.isFinite(bRent)) return b.displayScore - a.displayScore;
+      if (!Number.isFinite(aRent)) return 1;
+      if (!Number.isFinite(bRent)) return -1;
+      return bRent - aRent || b.displayScore - a.displayScore;
+    });
+  }
+
+  return cards.sort((a, b) => b.displayScore - a.displayScore);
+}
+
 function getEligibilityTags(item) {
   if (item.type === "public" || item.sourceId === "ur") return ["UR・公的賃貸"];
   return ["高齢者入居可・相談可"];
@@ -215,10 +239,12 @@ function renderCards() {
   }
 
   const filter = getFilterValues();
-  const cards = state.listings
-    .filter((item) => matches(item, filter))
-    .map((item) => ({ ...item, displayScore: scoreByPriority(item, filter.priority) }))
-    .sort((a, b) => b.displayScore - a.displayScore);
+  const cards = sortCards(
+    state.listings
+      .filter((item) => matches(item, filter))
+      .map((item) => ({ ...item, displayScore: scoreByPriority(item, filter.priority) })),
+    filter.priority
+  );
 
   qs("#visibleCount").textContent = cards.length;
   qs("#priorityArea").textContent = cards[0]?.area || "-";
