@@ -7,6 +7,7 @@ const dataDir = path.join(root, "data");
 const sourcesPath = path.join(dataDir, "sources.json");
 const propertiesPath = path.join(dataDir, "properties.json");
 const diagnosticsPath = path.join(dataDir, "scrape-diagnostics.json");
+const historyPath = path.join(dataDir, "listing-history.json");
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const DETAIL_TIMEOUT_MS = 15000;
@@ -37,6 +38,62 @@ function absoluteUrl(value, baseUrl) {
 
 function normalizeUrl(url) {
   return String(url || "").replace(/#$/, "");
+}
+
+function listingKey(item) {
+  return normalizeUrl(item?.listingUrl) || `${item?.sourceId || "unknown"}:${item?.title || "untitled"}:${item?.rentLabel || ""}`;
+}
+
+async function readJsonFile(filePath, fallbackValue) {
+  try {
+    return JSON.parse(await fs.readFile(filePath, "utf8"));
+  } catch {
+    return fallbackValue;
+  }
+}
+
+function applyListingHistory(items, oldHistory, generatedAt) {
+  const previousItems = oldHistory?.items && typeof oldHistory.items === "object" ? oldHistory.items : {};
+  const nextHistory = {
+    createdAt: oldHistory?.createdAt || generatedAt,
+    updatedAt: generatedAt,
+    items: { ...previousItems }
+  };
+
+  let newCount = 0;
+  const trackedItems = items.map((item) => {
+    const key = listingKey(item);
+    const previous = previousItems[key];
+    const isNew = !previous;
+    if (isNew) newCount += 1;
+
+    const tags = Array.from(new Set([...(item.tags || []).filter((tag) => tag !== "NEW"), ...(isNew ? ["NEW"] : [])]));
+    const firstSeenAt = previous?.firstSeenAt || generatedAt;
+    const seenCount = Number(previous?.seenCount || 0) + 1;
+
+    nextHistory.items[key] = {
+      firstSeenAt,
+      lastSeenAt: generatedAt,
+      seenCount,
+      source: item.source,
+      sourceId: item.sourceId,
+      title: item.title,
+      listingUrl: item.listingUrl,
+      rentLabel: item.rentLabel,
+      area: item.area
+    };
+
+    return {
+      ...item,
+      tags,
+      isNew,
+      firstSeenAt,
+      lastSeenAt: generatedAt,
+      seenCount
+    };
+  });
+
+  return { trackedItems, nextHistory, newCount };
 }
 
 function isValidHttpsUrl(value) {
@@ -84,10 +141,7 @@ function detailUrlScore(url, text, source) {
 
 function parseRent(text) {
   const normalized = normalizeText(text).replace(/,/g, "");
-  const candidates = [
-    /(?:賃料|家賃|月額賃料|月額)\s*[:：]?\s*([0-9]+(?:\.[0-9]+)?)\s*万円/,
-    /([0-9]+(?:\.[0-9]+)?)\s*万円/
-  ];
+  const candidates = [/(?:賃料|家賃|月額賃料|月額)\s*[:：]?\s*([0-9]+(?:\.[0-9]+)?)\s*万円/, /([0-9]+(?:\.[0-9]+)?)\s*万円/];
   for (const pattern of candidates) {
     const match = normalized.match(pattern);
     if (match) return Number(match[1]);
@@ -99,11 +153,7 @@ function parseRent(text) {
 
 function parseWalk(text) {
   const normalized = normalizeText(text);
-  const patterns = [
-    /(?:徒歩|歩)\s*([0-9]+)\s*分/,
-    /駅\s*徒歩\s*([0-9]+)\s*分/,
-    /バス\s*([0-9]+)\s*分\s*徒歩\s*([0-9]+)\s*分/
-  ];
+  const patterns = [/(?:徒歩|歩)\s*([0-9]+)\s*分/, /駅\s*徒歩\s*([0-9]+)\s*分/, /バス\s*([0-9]+)\s*分\s*徒歩\s*([0-9]+)\s*分/];
   for (const pattern of patterns) {
     const match = normalized.match(pattern);
     if (!match) continue;
@@ -124,13 +174,7 @@ function parseLayout(text) {
 
 function parseFloor(text) {
   const normalized = normalizeText(text);
-  const patterns = [
-    /([地下B]?[0-9]+)\s*階\s*\/\s*([0-9]+)\s*階建/,
-    /([地下B]?[0-9]+)\s*階\s*部分/,
-    /所在階\s*[:：]?\s*([地下B]?[0-9]+)\s*階(?:\s*\/\s*([0-9]+)\s*階建)?/,
-    /階数\s*[:：]?\s*([地下B]?[0-9]+)\s*階/,
-    /\s([地下B]?[0-9]+)\s*階\s+[1-5]\s*(?:S)?(?:LDK|DK|K)/i
-  ];
+  const patterns = [/([地下B]?[0-9]+)\s*階\s*\/\s*([0-9]+)\s*階建/, /([地下B]?[0-9]+)\s*階\s*部分/, /所在階\s*[:：]?\s*([地下B]?[0-9]+)\s*階(?:\s*\/\s*([0-9]+)\s*階建)?/, /階数\s*[:：]?\s*([地下B]?[0-9]+)\s*階/, /\s([地下B]?[0-9]+)\s*階\s+[1-5]\s*(?:S)?(?:LDK|DK|K)/i];
   for (const pattern of patterns) {
     const match = normalized.match(pattern);
     if (!match) continue;
@@ -181,6 +225,7 @@ function scoreListing(item) {
   if (item.areaGroup === "fukuoka_city") score += 18;
   if (item.type === "public") score += 16;
   if (item.tags?.some((tag) => tag.includes("高齢者"))) score += 12;
+  if (item.isNew) score += 6;
   if (Number(item.rent) <= 10) score += 8;
   if (Number(item.walk) <= 15) score += 8;
   if (item.elevatorLabel === "エレベーターあり") score += 4;
@@ -194,14 +239,7 @@ function makeFallbackSourceLink(source) {
   const area = source.id === "ur" ? "福岡市内" : source.id === "f-takken" ? "福岡市周辺" : "福岡県全域";
   const type = source.id === "ur" ? "public" : "private";
   const tags = source.id === "ur" ? ["UR", "保証人不要", "初期費用重視", "検索導線", "階数要確認", "EV要確認"] : ["高齢者相談可", "検索導線", "条件要確認", "画像要確認", "階数要確認", "EV要確認"];
-  const item = {
-    id: `${source.id}-source-link`, title: `${source.name} 公式検索`, source: source.name, sourceId: source.id,
-    status: "検索導線 / 実物件はリンク先で確認", address: source.description, area, areaGroup: areaGroupFromArea(area), type,
-    rent: source.id === "homemate" ? 12 : 10, rentLabel: source.id === "homemate" ? "12万円以下まで確認" : "10万円以下で検索",
-    layout: 2, layoutLabel: "2LDK以上を確認", walk: 999, walkLabel: "物件ごとに確認", floorLabel: "階数要確認", elevatorLabel: "EV要確認",
-    specialNotes: ["個別物件リンクを取得できなかったため候補カードには表示しません"], score: source.id === "ur" ? 92 : 76,
-    tags, note: "個別物件リンクを取得できなかったため、検索導線として保持しています。候補カードには表示しません。", listingUrl: source.url, sourceUrl: source.url, imageUrl: "", matchStatus: "source_link"
-  };
+  const item = { id: `${source.id}-source-link`, title: `${source.name} 公式検索`, source: source.name, sourceId: source.id, status: "検索導線 / 実物件はリンク先で確認", address: source.description, area, areaGroup: areaGroupFromArea(area), type, rent: source.id === "homemate" ? 12 : 10, rentLabel: source.id === "homemate" ? "12万円以下まで確認" : "10万円以下で検索", layout: 2, layoutLabel: "2LDK以上を確認", walk: 999, walkLabel: "物件ごとに確認", floorLabel: "階数要確認", elevatorLabel: "EV要確認", specialNotes: ["個別物件リンクを取得できなかったため候補カードには表示しません"], score: source.id === "ur" ? 92 : 76, tags, note: "個別物件リンクを取得できなかったため、検索導線として保持しています。候補カードには表示しません。", listingUrl: source.url, sourceUrl: source.url, imageUrl: "", matchStatus: "source_link" };
   item.score = scoreListing(item);
   return item;
 }
@@ -289,7 +327,6 @@ async function collectCandidateCards(page, source) {
         const detailLink = await pickDetailLink(node, source);
         const listingUrl = detailLink.url;
         if (!listingUrl) continue;
-
         let detailData = { text: "", imageUrl: "" };
         if (detailFetches < MAX_DETAIL_FETCHES_PER_SOURCE) {
           detailFetches += 1;
@@ -309,13 +346,7 @@ async function collectCandidateCards(page, source) {
         const tags = [source.name, "個別物件リンク", imageUrl ? "画像取得" : "画像要確認", parsedLayout.flexible ? "間取り要確認" : "", floorLabel === "階数要確認" ? "階数要確認" : "", elevatorLabel].filter(Boolean);
         if (source.id === "ur") tags.push("UR", "保証人不要");
         if (["able", "f-takken", "homemate"].includes(source.id)) tags.push("高齢者相談可");
-        const item = {
-          id: `${source.id}-${i + 1}-${Math.abs(hashCode(title + listingUrl))}`,
-          title, source: source.name, sourceId: source.id, status: "個別物件リンク取得 / 条件要確認", address: area, area, areaGroup: areaGroupFromArea(area), type: source.id === "ur" ? "public" : "private",
-          rent, rentLabel: rent === 999 ? "家賃要確認" : `${rent}万円目安`, layout: parsedLayout.rank, layoutLabel: parsedLayout.label,
-          walk, walkLabel: walk === 999 ? "徒歩要確認" : `徒歩${walk}分目安`, floorLabel, elevatorLabel, specialNotes, score: 0, tags,
-          note: "Playwrightで自動抽出した候補です。家賃、間取り、空室、入居審査は必ずリンク先で確認してください。", listingUrl, sourceUrl: source.url, imageUrl, matchStatus: "detail_link"
-        };
+        const item = { id: `${source.id}-${i + 1}-${Math.abs(hashCode(title + listingUrl))}`, title, source: source.name, sourceId: source.id, status: "個別物件リンク取得 / 条件要確認", address: area, area, areaGroup: areaGroupFromArea(area), type: source.id === "ur" ? "public" : "private", rent, rentLabel: rent === 999 ? "家賃要確認" : `${rent}万円目安`, layout: parsedLayout.rank, layoutLabel: parsedLayout.label, walk, walkLabel: walk === 999 ? "徒歩要確認" : `徒歩${walk}分目安`, floorLabel, elevatorLabel, specialNotes, score: 0, tags, note: "Playwrightで自動抽出した候補です。家賃、間取り、空室、入居審査は必ずリンク先で確認してください。", listingUrl, sourceUrl: source.url, imageUrl, matchStatus: "detail_link" };
         item.score = scoreListing(item);
         items.push(item);
       }
@@ -364,6 +395,7 @@ async function main() {
   const context = await browser.newContext({ locale: "ja-JP", userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" });
   const diagnostics = { generatedAt: new Date().toISOString(), sources: [] };
   const allItems = [];
+
   for (const source of sources) {
     const page = await context.newPage();
     const result = await scrapeSource(page, source);
@@ -371,11 +403,19 @@ async function main() {
     allItems.push(...result.items);
     await page.close().catch(() => {});
   }
+
   await browser.close();
+
+  const history = await readJsonFile(historyPath, { createdAt: diagnostics.generatedAt, updatedAt: diagnostics.generatedAt, items: {} });
   const sorted = dedupe(allItems).sort((a, b) => Number(b.score) - Number(a.score)).slice(0, MAX_OUTPUT_ITEMS);
-  await fs.writeFile(propertiesPath, `${JSON.stringify(sorted, null, 2)}\n`, "utf8");
-  await fs.writeFile(diagnosticsPath, `${JSON.stringify({ ...diagnostics, itemCount: sorted.length, detailCount: sorted.filter((item) => item.matchStatus === "detail_link").length, imageCount: sorted.filter((item) => Boolean(item.imageUrl)).length }, null, 2)}\n`, "utf8");
-  console.log(`Scraped ${sorted.length} listing/search records from ${sources.length} sources.`);
+  const { trackedItems, nextHistory, newCount } = applyListingHistory(sorted, history, diagnostics.generatedAt);
+  trackedItems.forEach((item) => { item.score = scoreListing(item); });
+  trackedItems.sort((a, b) => Number(b.score) - Number(a.score));
+
+  await fs.writeFile(propertiesPath, `${JSON.stringify(trackedItems, null, 2)}\n`, "utf8");
+  await fs.writeFile(historyPath, `${JSON.stringify(nextHistory, null, 2)}\n`, "utf8");
+  await fs.writeFile(diagnosticsPath, `${JSON.stringify({ ...diagnostics, itemCount: trackedItems.length, detailCount: trackedItems.filter((item) => item.matchStatus === "detail_link").length, imageCount: trackedItems.filter((item) => Boolean(item.imageUrl)).length, newCount }, null, 2)}\n`, "utf8");
+  console.log(`Scraped ${trackedItems.length} listing/search records from ${sources.length} sources. New listings: ${newCount}.`);
 }
 
 main().catch((error) => {
