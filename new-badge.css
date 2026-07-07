@@ -1,0 +1,10 @@
+.badge {
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.badge.new,
+.badge.NEW {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid rgba(190, 18, 60, .25);
+}
