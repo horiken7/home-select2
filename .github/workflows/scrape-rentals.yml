@@ -28,6 +28,9 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Patch scrape output limit
+        run: node scripts/patch-scrape-limits.mjs
+
       - name: Scrape rental sources
         run: npm run scrape
 
