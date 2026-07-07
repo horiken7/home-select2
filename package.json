@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "validate:data": "node scripts/validate-data.mjs",
-    "scrape": "node scripts/scrape-rentals.mjs && node scripts/clean-rental-data.mjs",
-    "clean:data": "node scripts/clean-rental-data.mjs"
+    "scrape": "node scripts/scrape-rentals.mjs && node scripts/prefer-property-images.mjs && node scripts/clean-rental-data.mjs",
+    "clean:data": "node scripts/clean-rental-data.mjs",
+    "prefer:images": "node scripts/prefer-property-images.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.0"
