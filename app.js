@@ -70,7 +70,7 @@ function textLink(url, className, text, label) {
 }
 
 function badgeClass(tag) {
-  if (["UR", "保証人不要", "高齢者相談可", "高齢者入居可", "高齢者入居可・相談可", "個別物件リンク", "初期費用重視", "画像取得", "エレベーターあり", "家賃値下げ"].includes(tag)) return "green";
+  if (["UR", "UR・公的賃貸", "保証人不要", "高齢者相談可", "高齢者入居可", "高齢者入居可・相談可", "個別物件リンク", "初期費用重視", "画像取得", "エレベーターあり", "家賃値下げ"].includes(tag)) return "green";
   if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認", "間取り要確認", "画像要確認", "階数要確認", "EV要確認", "家賃変更"].includes(tag)) return "orange";
   if (["取得失敗", "条件外", "エレベーターなし", "家賃値上げ"].includes(tag)) return "red";
   return "";
@@ -82,6 +82,10 @@ function isBadListingUrl(url) {
   if (String(url).endsWith("#")) return true;
   if (String(url).includes("/company/")) return true;
   return false;
+}
+
+function isUrListing(item) {
+  return item?.sourceId === "ur" || String(item?.source || "").includes("UR");
 }
 
 function isUsableImageUrl(url) {
@@ -98,10 +102,11 @@ function isSameUrl(a, b) {
 function isDisplayableListing(item) {
   const title = String(item?.title || "");
   if (!item) return false;
-  if (Number(item.layout) < 2) return false;
   if (title.includes("会社紹介")) return false;
   if (title.includes("店舗紹介")) return false;
   if (isBadListingUrl(item.listingUrl) && isBadListingUrl(item.sourceUrl)) return false;
+  if (isUrListing(item)) return Number(item.layout || 2) >= 2;
+  if (Number(item.layout) < 2) return false;
   return true;
 }
 
@@ -203,11 +208,12 @@ function isUnknownValue(value) {
 function matches(item, filter) {
   const rent = Number(item.rent);
   const walk = Number(item.walk);
+  const layout = Number(item.layout || 2);
 
   if (!matchesArea(item, filter.area)) return false;
   if (filter.type !== "all" && item.type !== filter.type) return false;
   if (!isUnknownValue(rent) && rent > filter.rent) return false;
-  if (Number(item.layout) < filter.layout) return false;
+  if (layout < filter.layout) return false;
   if (filter.walk < 999 && !isUnknownValue(walk) && walk > filter.walk) return false;
   return true;
 }
