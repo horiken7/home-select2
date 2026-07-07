@@ -1,6 +1,7 @@
 const state = {
   targetSites: [],
   listings: [],
+  sourceUpdates: { generatedAt: "", notices: [] },
   loadError: null,
   currentPage: 1,
   perPage: 10
@@ -16,29 +17,36 @@ const filters = {
   priority: qs("#priorityFilter")
 };
 
-async function loadJson(path) {
+async function loadJson(path, optional = false) {
   const response = await fetch(`${path}?v=${Date.now()}`);
-  if (!response.ok) throw new Error(`${path}: ${response.status}`);
+  if (!response.ok) {
+    if (optional) return null;
+    throw new Error(`${path}: ${response.status}`);
+  }
   return response.json();
 }
 
 async function loadData() {
   try {
-    const [sources, properties] = await Promise.all([
+    const [sources, properties, updates] = await Promise.all([
       loadJson("data/sources.json"),
-      loadJson("data/properties.json")
+      loadJson("data/properties.json"),
+      loadJson("data/source-updates.json", true)
     ]);
 
     state.targetSites = Array.isArray(sources) ? sources : [];
     state.listings = Array.isArray(properties) ? properties.filter(isDisplayableListing) : [];
+    state.sourceUpdates = updates && typeof updates === "object" ? updates : { generatedAt: "", notices: [] };
     state.loadError = null;
   } catch (error) {
     console.error(error);
     state.targetSites = [];
     state.listings = [];
+    state.sourceUpdates = { generatedAt: "", notices: [] };
     state.loadError = "データを読み込めませんでした。GitHub Pages上で開いているか、dataフォルダのJSONを確認してください。";
   }
 
+  renderUpdates();
   renderCards();
   renderSources();
 }
@@ -100,6 +108,19 @@ function isDisplayableListing(item) {
 function shorten(value, max = 34) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+function formatDateTime(value) {
+  if (!value) return "更新日時未取得";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
 }
 
 function displayTitle(item) {
@@ -275,6 +296,52 @@ function getRentChangeMarkup(item) {
       <strong>${escapeHtml(previous)} → ${escapeHtml(current)}</strong>
       <small>${escapeHtml(directionLabel)} ${escapeHtml(diffLabel)}</small>
     </div>`;
+}
+
+function renderUpdates() {
+  const countEl = qs("#newListingCount");
+  const messageEl = qs("#newListingMessage");
+  const updateCard = document.querySelector(".new-count-card");
+  const siteNewsList = qs("#siteNewsList");
+  const siteNewsCount = qs("#siteNewsCount");
+  const generatedAt = qs("#updatesGeneratedAt");
+
+  if (!countEl || !messageEl || !siteNewsList || !siteNewsCount) return;
+
+  const newListings = state.listings.filter((item) => item.isNew || (Array.isArray(item.tags) && item.tags.includes("NEW")));
+  countEl.textContent = `${newListings.length}件`;
+  updateCard?.classList.toggle("has-new", newListings.length > 0);
+  messageEl.textContent = newListings.length > 0
+    ? `今回初めて検出した物件が${newListings.length}件あります。`
+    : "今回初めて検出した物件はありません。";
+
+  const notices = Array.isArray(state.sourceUpdates?.notices) ? state.sourceUpdates.notices : [];
+  const visibleNotices = notices.slice(0, 8);
+  siteNewsCount.textContent = `${visibleNotices.length}件`;
+  if (generatedAt) generatedAt.textContent = state.sourceUpdates?.generatedAt ? `更新：${formatDateTime(state.sourceUpdates.generatedAt)}` : "更新日時未取得";
+
+  if (!visibleNotices.length) {
+    siteNewsList.innerHTML = `<p class="muted">各検索サイトの新着情報はありません。</p>`;
+    return;
+  }
+
+  siteNewsList.innerHTML = visibleNotices.map((notice) => {
+    const title = notice.title || "更新情報";
+    const source = notice.sourceName || notice.source || "対象サイト";
+    const url = notice.url || "";
+    const summary = notice.summary ? `<p class="site-news-summary">${escapeHtml(notice.summary)}</p>` : "";
+    const detectedAt = notice.detectedAt ? `<span>${escapeHtml(formatDateTime(notice.detectedAt))}</span>` : "";
+
+    return `
+      <article class="site-news-item">
+        ${textLink(url, "", title, `${source}の新着情報を開く`)}
+        <div class="site-news-meta">
+          <span class="site-news-source">${escapeHtml(source)}</span>
+          ${detectedAt}
+        </div>
+        ${summary}
+      </article>`;
+  }).join("");
 }
 
 function pageCount(total) {
