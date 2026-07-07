@@ -205,6 +205,11 @@ function rentSortValue(item) {
   return isUnknownValue(rent) ? Number.POSITIVE_INFINITY : rent;
 }
 
+function walkSortValue(item) {
+  const walk = Number(item.walk);
+  return isUnknownValue(walk) ? Number.POSITIVE_INFINITY : walk;
+}
+
 function sortCards(cards, priority) {
   if (priority === "rentAsc") {
     return cards.sort((a, b) => rentSortValue(a) - rentSortValue(b) || b.displayScore - a.displayScore);
@@ -219,6 +224,10 @@ function sortCards(cards, priority) {
       if (!Number.isFinite(bRent)) return -1;
       return bRent - aRent || b.displayScore - a.displayScore;
     });
+  }
+
+  if (priority === "walkAsc") {
+    return cards.sort((a, b) => walkSortValue(a) - walkSortValue(b) || b.displayScore - a.displayScore);
   }
 
   return cards.sort((a, b) => b.displayScore - a.displayScore);
