@@ -60,9 +60,9 @@ function textLink(url, className, text, label) {
 }
 
 function badgeClass(tag) {
-  if (["UR", "保証人不要", "高齢者相談可", "高齢者入居可", "高齢者入居可・相談可", "個別物件リンク", "初期費用重視", "画像取得"].includes(tag)) return "green";
-  if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認", "間取り要確認", "画像要確認"].includes(tag)) return "orange";
-  if (["取得失敗", "条件外"].includes(tag)) return "red";
+  if (["UR", "保証人不要", "高齢者相談可", "高齢者入居可", "高齢者入居可・相談可", "個別物件リンク", "初期費用重視", "画像取得", "エレベーターあり"].includes(tag)) return "green";
+  if (["条件要確認", "要家賃確認", "検索導線", "リンク要確認", "間取り要確認", "画像要確認", "階数要確認", "EV要確認"].includes(tag)) return "orange";
+  if (["取得失敗", "条件外", "エレベーターなし"].includes(tag)) return "red";
   return "";
 }
 
@@ -238,6 +238,25 @@ function getEligibilityTags(item) {
   return ["高齢者入居可・相談可"];
 }
 
+function getFloorLabel(item) {
+  return item.floorLabel || item.floor || "階数要確認";
+}
+
+function getElevatorLabel(item) {
+  return item.elevatorLabel || item.elevator || "EV要確認";
+}
+
+function getSpecialNotes(item) {
+  if (Array.isArray(item.specialNotes) && item.specialNotes.length) return item.specialNotes.slice(0, 4);
+  const notes = [];
+  if (item.type === "public" || item.sourceId === "ur") notes.push("UR・公的賃貸候補");
+  else notes.push("高齢者入居可・相談可の検索結果から取得");
+  if (Number(item.rent) === 999) notes.push("家賃はリンク先で確認");
+  if (Number(item.walk) === 999) notes.push("駅徒歩はリンク先で確認");
+  notes.push("空室・入居審査はリンク先で確認");
+  return notes.slice(0, 4);
+}
+
 function renderCards() {
   const container = qs("#cards");
   if (state.loadError) {
@@ -279,6 +298,9 @@ function renderCard(item, index) {
   const { detailUrl, searchUrl, cardLinkUrl } = getUrls(item);
   const accuracy = getAccuracy(item, detailUrl, searchUrl);
   const cardTitle = displayTitle(item);
+  const floorLabel = getFloorLabel(item);
+  const elevatorLabel = getElevatorLabel(item);
+  const specialNotes = getSpecialNotes(item);
   const classes = [
     "property-card",
     index === 0 ? "best" : "",
@@ -315,6 +337,8 @@ function renderCard(item, index) {
         <div class="key-facts">
           <div class="key-fact rent"><span>家賃</span><strong>${escapeHtml(item.rentLabel)}</strong></div>
           <div class="key-fact layout"><span>間取り</span><strong>${escapeHtml(item.layoutLabel)}</strong></div>
+          <div class="key-fact walk"><span>駅から徒歩時間</span><strong>${escapeHtml(item.walkLabel)}</strong></div>
+          <div class="key-fact floor"><span>階数・エレベーター</span><strong>${escapeHtml(floorLabel)} / ${escapeHtml(elevatorLabel)}</strong></div>
         </div>
 
         <div class="address-box">
@@ -322,9 +346,18 @@ function renderCard(item, index) {
           ${textLink(cardLinkUrl, "address-link", item.address || item.area || "住所要確認", `${item.address || item.area || "住所"}を開く`)}
         </div>
 
+        <div class="special-notes">
+          <span>物件の特記事項</span>
+          <ul>
+            ${specialNotes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}
+          </ul>
+        </div>
+
         <div class="meta-row">
           <span class="accuracy accuracy-${accuracy.className}" title="${escapeAttr(accuracy.hint)}">取得精度：${escapeHtml(accuracy.label)}</span>
           <span class="walk-chip">駅徒歩：${escapeHtml(item.walkLabel)}</span>
+          <span class="walk-chip">${escapeHtml(floorLabel)}</span>
+          <span class="walk-chip">${escapeHtml(elevatorLabel)}</span>
         </div>
 
         <div class="badges">
