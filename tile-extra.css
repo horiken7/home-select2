@@ -8,6 +8,59 @@
   border-color: rgba(109, 40, 217, .18);
 }
 
+.rent-change {
+  border: 1px solid rgba(245, 158, 11, .32);
+  border-radius: 16px;
+  background: #fffbeb;
+  padding: 12px;
+  margin: 0 0 12px;
+}
+
+.rent-change span {
+  display: block;
+  color: #92400e;
+  font-size: .75rem;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.rent-change strong {
+  display: block;
+  color: #111827;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.rent-change small {
+  display: inline-block;
+  margin-top: 4px;
+  font-weight: 900;
+}
+
+.rent-change-down {
+  border-color: rgba(22, 163, 74, .28);
+  background: #f0fdf4;
+}
+
+.rent-change-down span,
+.rent-change-down small {
+  color: #15803d;
+}
+
+.rent-change-up {
+  border-color: rgba(220, 38, 38, .25);
+  background: #fef2f2;
+}
+
+.rent-change-up span,
+.rent-change-up small {
+  color: #b91c1c;
+}
+
+.property-card.rent-changed {
+  box-shadow: 0 22px 46px rgba(245, 158, 11, .16);
+}
+
 .special-notes {
   border: 1px solid var(--line);
   border-radius: 16px;
