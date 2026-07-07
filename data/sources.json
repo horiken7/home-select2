@@ -28,5 +28,11 @@
     "name": "UR賃貸住宅",
     "description": "保証人不要、礼金・仲介手数料なしの公的賃貸候補。",
     "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka"
+  },
+  {
+    "id": "nicety",
+    "name": "ニセティ / NICE TY",
+    "description": "高齢者向け住宅の空き状況を監視。現在は空きなし想定、更新があれば通知対象。",
+    "url": "https://www.nicety.or.jp/"
   }
 ]
