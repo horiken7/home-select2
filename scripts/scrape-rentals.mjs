@@ -116,6 +116,60 @@ function parseLayout(text) {
   };
 }
 
+function parseFloor(text) {
+  const normalized = normalizeText(text);
+  const patterns = [
+    /([地下B]?[0-9]+)\s*階\s*\/\s*([0-9]+)\s*階建/,
+    /([地下B]?[0-9]+)\s*階\s*部分/,
+    /所在階\s*[:：]?\s*([地下B]?[0-9]+)\s*階/,
+    /([地下B]?[0-9]+)\s*階$/
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (!match) continue;
+    if (match[2]) return `${match[1]}階 / ${match[2]}階建`;
+    return `${match[1]}階`;
+  }
+
+  return "階数要確認";
+}
+
+function parseElevator(text) {
+  const normalized = normalizeText(text);
+  if (/エレベーター\s*(なし|無)|EV\s*(なし|無)|エレベータ\s*(なし|無)/i.test(normalized)) return "エレベーターなし";
+  if (/エレベーター|エレベータ|EV有|EVあり|EV付き/i.test(normalized)) return "エレベーターあり";
+  return "EV要確認";
+}
+
+function extractSpecialNotes(text, source, context) {
+  const normalized = normalizeText(text);
+  const notes = [];
+  const push = (note) => {
+    if (note && !notes.includes(note)) notes.push(note);
+  };
+
+  if (source.id === "ur") push("UR・公的賃貸候補");
+  else push("高齢者入居可・相談可の検索結果から取得");
+
+  const keywords = [
+    "保証人不要", "礼金なし", "敷金なし", "仲介手数料なし", "更新料なし", "角部屋", "南向き", "オートロック",
+    "バス・トイレ別", "追い焚き", "浴室乾燥", "宅配ボックス", "駐車場", "駐輪場", "ペット相談", "二人入居可",
+    "即入居可", "新着", "都市ガス", "インターネット無料"
+  ];
+  keywords.forEach((keyword) => {
+    if (normalized.includes(keyword)) push(keyword);
+  });
+
+  if (context.rent === 999) push("家賃はリンク先で確認");
+  if (context.walk === 999) push("駅徒歩はリンク先で確認");
+  if (context.parsedLayout?.flexible) push("間取りはリンク先で確認");
+  if (!context.imageUrl) push("画像はリンク先で確認");
+  push("空室・入居審査はリンク先で確認");
+
+  return notes.slice(0, 6);
+}
+
 function areaGroupFromArea(area) {
   if (["福岡市西区", "福岡市早良区", "福岡市城南区"].includes(area)) return "priority";
   if (String(area).startsWith("福岡市") || area === "福岡市内") return "fukuoka_city";
@@ -138,6 +192,8 @@ function scoreListing(item) {
   if (item.tags?.some((tag) => tag.includes("高齢者"))) score += 12;
   if (Number(item.rent) <= 10) score += 8;
   if (Number(item.walk) <= 15) score += 8;
+  if (item.elevatorLabel === "エレベーターあり") score += 4;
+  if (item.floorLabel && item.floorLabel !== "階数要確認") score += 2;
   if (item.listingUrl && item.listingUrl !== item.sourceUrl) score += 4;
   if (item.imageUrl) score += 2;
   return Math.min(score, 100);
@@ -147,8 +203,8 @@ function makeFallbackSourceLink(source) {
   const area = source.id === "ur" ? "福岡市内" : source.id === "f-takken" ? "福岡市周辺" : "福岡県全域";
   const type = source.id === "ur" ? "public" : "private";
   const tags = source.id === "ur"
-    ? ["UR", "保証人不要", "初期費用重視", "検索導線"]
-    : ["高齢者相談可", "検索導線", "条件要確認", "画像要確認"];
+    ? ["UR", "保証人不要", "初期費用重視", "検索導線", "階数要確認", "EV要確認"]
+    : ["高齢者相談可", "検索導線", "条件要確認", "画像要確認", "階数要確認", "EV要確認"];
 
   const item = {
     id: `${source.id}-source-link`,
@@ -166,6 +222,9 @@ function makeFallbackSourceLink(source) {
     layoutLabel: "2LDK以上を確認",
     walk: 999,
     walkLabel: "物件ごとに確認",
+    floorLabel: "階数要確認",
+    elevatorLabel: "EV要確認",
+    specialNotes: ["個別物件リンクを取得できなかったため候補カードには表示しません"],
     score: source.id === "ur" ? 92 : 76,
     tags,
     note: "個別物件リンクを取得できなかったため、検索導線として保持しています。候補カードには表示しません。",
@@ -295,8 +354,17 @@ async function collectCandidateCards(page, source) {
         const parsedLayout = parseLayout(text);
         const rent = parseRent(text);
         const walk = parseWalk(text);
-        const tags = [source.name, "個別物件リンク", imageUrl ? "画像取得" : "画像要確認", parsedLayout.flexible ? "間取り要確認" : ""]
-          .filter(Boolean);
+        const floorLabel = parseFloor(text);
+        const elevatorLabel = parseElevator(text);
+        const specialNotes = extractSpecialNotes(text, source, { rent, walk, parsedLayout, imageUrl, listingUrl });
+        const tags = [
+          source.name,
+          "個別物件リンク",
+          imageUrl ? "画像取得" : "画像要確認",
+          parsedLayout.flexible ? "間取り要確認" : "",
+          floorLabel === "階数要確認" ? "階数要確認" : "",
+          elevatorLabel,
+        ].filter(Boolean);
         if (source.id === "ur") tags.push("UR", "保証人不要");
         if (["able", "f-takken", "homemate"].includes(source.id)) tags.push("高齢者相談可");
 
@@ -316,6 +384,9 @@ async function collectCandidateCards(page, source) {
           layoutLabel: parsedLayout.label,
           walk,
           walkLabel: walk === 999 ? "徒歩要確認" : `徒歩${walk}分目安`,
+          floorLabel,
+          elevatorLabel,
+          specialNotes,
           score: 0,
           tags,
           note: "Playwrightで自動抽出した候補です。家賃、間取り、空室、入居審査は必ずリンク先で確認してください。",
