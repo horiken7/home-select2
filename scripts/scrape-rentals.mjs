@@ -11,7 +11,9 @@ const diagnosticsPath = path.join(dataDir, "scrape-diagnostics.json");
 const DEFAULT_TIMEOUT_MS = 30000;
 const DETAIL_TIMEOUT_MS = 15000;
 const MAX_TEXT_LENGTH = 260;
-const MAX_DETAIL_FETCHES_PER_SOURCE = 12;
+const MAX_DETAIL_FETCHES_PER_SOURCE = 50;
+const MAX_CARDS_PER_SOURCE = 50;
+const MAX_OUTPUT_ITEMS = 50;
 
 function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
@@ -278,7 +280,7 @@ async function collectCandidateCards(page, source) {
     const count = await page.locator(selector).count().catch(() => 0);
     if (count >= 3) {
       const items = [];
-      const max = Math.min(count, 12);
+      const max = Math.min(count, MAX_CARDS_PER_SOURCE);
       let detailFetches = 0;
       for (let i = 0; i < max; i += 1) {
         const node = page.locator(selector).nth(i);
@@ -370,7 +372,7 @@ async function main() {
     await page.close().catch(() => {});
   }
   await browser.close();
-  const sorted = dedupe(allItems).sort((a, b) => Number(b.score) - Number(a.score)).slice(0, 40);
+  const sorted = dedupe(allItems).sort((a, b) => Number(b.score) - Number(a.score)).slice(0, MAX_OUTPUT_ITEMS);
   await fs.writeFile(propertiesPath, `${JSON.stringify(sorted, null, 2)}\n`, "utf8");
   await fs.writeFile(diagnosticsPath, `${JSON.stringify({ ...diagnostics, itemCount: sorted.length, detailCount: sorted.filter((item) => item.matchStatus === "detail_link").length, imageCount: sorted.filter((item) => Boolean(item.imageUrl)).length }, null, 2)}\n`, "utf8");
   console.log(`Scraped ${sorted.length} listing/search records from ${sources.length} sources.`);
