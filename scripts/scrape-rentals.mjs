@@ -8,6 +8,7 @@ const sourcesPath = path.join(dataDir, "sources.json");
 const propertiesPath = path.join(dataDir, "properties.json");
 const diagnosticsPath = path.join(dataDir, "scrape-diagnostics.json");
 const historyPath = path.join(dataDir, "listing-history.json");
+const sourceUpdatesPath = path.join(dataDir, "source-updates.json");
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const DETAIL_TIMEOUT_MS = 15000;
@@ -29,11 +30,7 @@ function absoluteUrl(value, baseUrl) {
   if (!value) return "";
   const first = String(value).split(",")[0].trim().split(" ")[0].replace(/^['"]|['"]$/g, "");
   if (!first || first.startsWith("data:") || first.startsWith("blob:") || first.startsWith("mailto:") || first.startsWith("tel:")) return "";
-  try {
-    return new URL(first, baseUrl).toString();
-  } catch {
-    return "";
-  }
+  try { return new URL(first, baseUrl).toString(); } catch { return ""; }
 }
 
 function normalizeUrl(url) {
@@ -62,17 +59,14 @@ function buildRentChange(previous, item, generatedAt) {
   const previousRent = Number(previous?.rent);
   const currentRent = Number(item.rent);
   if (!previous || !isKnownRent(previousRent) || !isKnownRent(currentRent)) return null;
-
   const previousRounded = roundRent(previousRent);
   const currentRounded = roundRent(currentRent);
   if (previousRounded === currentRounded) return null;
-
   const difference = roundRent(currentRounded - previousRounded);
   const direction = difference > 0 ? "up" : "down";
   const label = direction === "up"
     ? `家賃変更：${formatRent(previousRounded)} → ${formatRent(currentRounded)}（値上げ +${Math.abs(difference)}万円）`
     : `家賃変更：${formatRent(previousRounded)} → ${formatRent(currentRounded)}（値下げ -${Math.abs(difference)}万円）`;
-
   return {
     changedAt: generatedAt,
     previousRent: previousRounded,
@@ -86,23 +80,15 @@ function buildRentChange(previous, item, generatedAt) {
 }
 
 async function readJsonFile(filePath, fallbackValue) {
-  try {
-    return JSON.parse(await fs.readFile(filePath, "utf8"));
-  } catch {
-    return fallbackValue;
-  }
+  try { return JSON.parse(await fs.readFile(filePath, "utf8")); } catch { return fallbackValue; }
 }
 
 function applyListingHistory(items, oldHistory, generatedAt) {
   const previousItems = oldHistory?.items && typeof oldHistory.items === "object" ? oldHistory.items : {};
-  const nextHistory = {
-    createdAt: oldHistory?.createdAt || generatedAt,
-    updatedAt: generatedAt,
-    items: { ...previousItems }
-  };
-
+  const nextHistory = { createdAt: oldHistory?.createdAt || generatedAt, updatedAt: generatedAt, items: { ...previousItems } };
   let newCount = 0;
   let rentChangeCount = 0;
+
   const trackedItems = items.map((item) => {
     const key = listingKey(item);
     const previous = previousItems[key];
@@ -112,9 +98,7 @@ function applyListingHistory(items, oldHistory, generatedAt) {
     if (isNew) newCount += 1;
     if (rentChanged) rentChangeCount += 1;
 
-    const changeTags = rentChanged
-      ? ["家賃変更", rentChange.direction === "up" ? "家賃値上げ" : "家賃値下げ"]
-      : [];
+    const changeTags = rentChanged ? ["家賃変更", rentChange.direction === "up" ? "家賃値上げ" : "家賃値下げ"] : [];
     const tags = Array.from(new Set([
       ...(item.tags || []).filter((tag) => !["NEW", "家賃変更", "家賃値上げ", "家賃値下げ"].includes(tag)),
       ...(isNew ? ["NEW"] : []),
@@ -256,6 +240,7 @@ function extractSpecialNotes(text, source, context) {
   const notes = [];
   const push = (note) => { if (note && !notes.includes(note)) notes.push(note); };
   if (source.id === "ur") push("UR・公的賃貸候補");
+  else if (source.id === "nicety") push("ニセティ空き状況監視対象");
   else push("高齢者入居可・相談可の検索結果から取得");
   const keywords = ["保証人不要", "礼金なし", "敷金なし", "仲介手数料なし", "更新料なし", "角部屋", "南向き", "オートロック", "バス・トイレ別", "追い焚き", "浴室乾燥", "宅配ボックス", "駐車場", "駐輪場", "ペット相談", "二人入居可", "即入居可", "新着", "都市ガス", "インターネット無料"];
   keywords.forEach((keyword) => { if (normalized.includes(keyword)) push(keyword); });
@@ -298,15 +283,72 @@ function scoreListing(item) {
 
 function makeFallbackSourceLink(source) {
   const area = source.id === "ur" ? "福岡市内" : source.id === "f-takken" ? "福岡市周辺" : "福岡県全域";
-  const type = source.id === "ur" ? "public" : "private";
-  const tags = source.id === "ur" ? ["UR", "保証人不要", "初期費用重視", "検索導線", "階数要確認", "EV要確認"] : ["高齢者相談可", "検索導線", "条件要確認", "画像要確認", "階数要確認", "EV要確認"];
-  const item = { id: `${source.id}-source-link`, title: `${source.name} 公式検索`, source: source.name, sourceId: source.id, status: "検索導線 / 実物件はリンク先で確認", address: source.description, area, areaGroup: areaGroupFromArea(area), type, rent: source.id === "homemate" ? 12 : 10, rentLabel: source.id === "homemate" ? "12万円以下まで確認" : "10万円以下で検索", layout: 2, layoutLabel: "2LDK以上を確認", walk: 999, walkLabel: "物件ごとに確認", floorLabel: "階数要確認", elevatorLabel: "EV要確認", specialNotes: ["個別物件リンクを取得できなかったため候補カードには表示しません"], score: source.id === "ur" ? 92 : 76, tags, note: "個別物件リンクを取得できなかったため、検索導線として保持しています。候補カードには表示しません。", listingUrl: source.url, sourceUrl: source.url, imageUrl: "", matchStatus: "source_link" };
+  const type = ["ur", "nicety"].includes(source.id) ? "public" : "private";
+  const tags = source.id === "ur"
+    ? ["UR", "保証人不要", "初期費用重視", "検索導線", "階数要確認", "EV要確認"]
+    : source.id === "nicety"
+      ? ["ニセティ", "空き状況監視", "検索導線", "条件要確認"]
+      : ["高齢者相談可", "検索導線", "条件要確認", "画像要確認", "階数要確認", "EV要確認"];
+  const item = {
+    id: `${source.id}-source-link`, title: `${source.name} 公式検索`, source: source.name, sourceId: source.id,
+    status: "検索導線 / 実物件はリンク先で確認", address: source.description, area, areaGroup: areaGroupFromArea(area), type,
+    rent: source.id === "homemate" ? 12 : 10, rentLabel: source.id === "homemate" ? "12万円以下まで確認" : "10万円以下で検索",
+    layout: 2, layoutLabel: "2LDK以上を確認", walk: 999, walkLabel: "物件ごとに確認", floorLabel: "階数要確認", elevatorLabel: "EV要確認",
+    specialNotes: ["個別物件リンクを取得できなかったため候補カードには表示しません"], score: source.id === "ur" ? 92 : 76,
+    tags, note: "個別物件リンクを取得できなかったため、検索導線として保持しています。候補カードには表示しません。", listingUrl: source.url, sourceUrl: source.url, imageUrl: "", matchStatus: "source_link"
+  };
   item.score = scoreListing(item);
   return item;
 }
 
 async function safeText(locator) {
   try { return normalizeText(await locator.innerText({ timeout: 1200 })); } catch { return ""; }
+}
+
+async function rawText(locator) {
+  try { return await locator.innerText({ timeout: 1500 }); } catch { return ""; }
+}
+
+function extractSourceNotices(raw, source, detectedAt) {
+  const lines = String(raw || "")
+    .split(/\n+/)
+    .map((line) => normalizeText(line))
+    .filter((line) => line.length >= 4 && line.length <= 120);
+  const keywords = /(新着|お知らせ|更新|募集|空室|空き|入居|受付|抽選|申込|申込み|見学|内覧)/;
+  const exclude = /(menu|copyright|サイトマップ|個人情報|トップページ|検索|ログイン|お気に入り|戻る|次へ|前へ)/i;
+  const seen = new Set();
+  const notices = [];
+
+  for (const line of lines) {
+    if (!keywords.test(line) || exclude.test(line)) continue;
+    const title = truncate(line, 72);
+    if (seen.has(title)) continue;
+    seen.add(title);
+    notices.push({
+      sourceId: source.id,
+      sourceName: source.name,
+      title,
+      summary: source.id === "nicety" ? "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。" : "検索対象サイト上で検出した新着・更新候補です。",
+      url: source.url,
+      type: "site_notice",
+      detectedAt
+    });
+    if (notices.length >= 5) break;
+  }
+
+  if (source.id === "nicety" && !notices.length) {
+    notices.push({
+      sourceId: source.id,
+      sourceName: source.name,
+      title: "空き状況を監視中（現在は空きなし想定）",
+      summary: "募集・空室・入居情報の更新が出た場合に新着情報として表示します。",
+      url: source.url,
+      type: "watch",
+      detectedAt
+    });
+  }
+
+  return notices;
 }
 
 async function pickDetailLink(node, source) {
@@ -407,7 +449,13 @@ async function collectCandidateCards(page, source) {
         const tags = [source.name, "個別物件リンク", imageUrl ? "画像取得" : "画像要確認", parsedLayout.flexible ? "間取り要確認" : "", floorLabel === "階数要確認" ? "階数要確認" : "", elevatorLabel].filter(Boolean);
         if (source.id === "ur") tags.push("UR", "保証人不要");
         if (["able", "f-takken", "homemate"].includes(source.id)) tags.push("高齢者相談可");
-        const item = { id: `${source.id}-${i + 1}-${Math.abs(hashCode(title + listingUrl))}`, title, source: source.name, sourceId: source.id, status: "個別物件リンク取得 / 条件要確認", address: area, area, areaGroup: areaGroupFromArea(area), type: source.id === "ur" ? "public" : "private", rent, rentLabel: rent === 999 ? "家賃要確認" : `${rent}万円目安`, layout: parsedLayout.rank, layoutLabel: parsedLayout.label, walk, walkLabel: walk === 999 ? "徒歩要確認" : `徒歩${walk}分目安`, floorLabel, elevatorLabel, specialNotes, score: 0, tags, note: "Playwrightで自動抽出した候補です。家賃、間取り、空室、入居審査は必ずリンク先で確認してください。", listingUrl, sourceUrl: source.url, imageUrl, matchStatus: "detail_link" };
+        const item = {
+          id: `${source.id}-${i + 1}-${Math.abs(hashCode(title + listingUrl))}`,
+          title, source: source.name, sourceId: source.id, status: "個別物件リンク取得 / 条件要確認", address: area, area, areaGroup: areaGroupFromArea(area), type: ["ur", "nicety"].includes(source.id) ? "public" : "private",
+          rent, rentLabel: rent === 999 ? "家賃要確認" : `${rent}万円目安`, layout: parsedLayout.rank, layoutLabel: parsedLayout.label,
+          walk, walkLabel: walk === 999 ? "徒歩要確認" : `徒歩${walk}分目安`, floorLabel, elevatorLabel, specialNotes, score: 0, tags,
+          note: "Playwrightで自動抽出した候補です。家賃、間取り、空室、入居審査は必ずリンク先で確認してください。", listingUrl, sourceUrl: source.url, imageUrl, matchStatus: "detail_link"
+        };
         item.score = scoreListing(item);
         items.push(item);
       }
@@ -436,17 +484,31 @@ function dedupe(items) {
   });
 }
 
+function dedupeNotices(notices) {
+  const seen = new Set();
+  return notices.filter((notice) => {
+    const key = `${notice.sourceId}:${notice.title}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 async function scrapeSource(page, source) {
   const startedAt = new Date().toISOString();
   try {
     await page.goto(source.url, { waitUntil: "domcontentloaded", timeout: DEFAULT_TIMEOUT_MS });
     await page.waitForTimeout(2500);
     const title = await page.title().catch(() => "");
+    const pageRawText = await rawText(page.locator("body"));
+    const notices = extractSourceNotices(pageRawText, source, new Date().toISOString());
     const items = await collectCandidateCards(page, source);
     const outputItems = items.length ? items : [makeFallbackSourceLink(source)];
-    return { ok: true, sourceId: source.id, sourceName: source.name, url: source.url, title, startedAt, finishedAt: new Date().toISOString(), itemCount: outputItems.length, detailCount: outputItems.filter((item) => item.matchStatus === "detail_link").length, imageCount: outputItems.filter((item) => Boolean(item.imageUrl)).length, items: outputItems };
+    return { ok: true, sourceId: source.id, sourceName: source.name, url: source.url, title, startedAt, finishedAt: new Date().toISOString(), itemCount: outputItems.length, detailCount: outputItems.filter((item) => item.matchStatus === "detail_link").length, imageCount: outputItems.filter((item) => Boolean(item.imageUrl)).length, noticeCount: notices.length, notices, items: outputItems };
   } catch (error) {
-    return { ok: false, sourceId: source.id, sourceName: source.name, url: source.url, startedAt, finishedAt: new Date().toISOString(), error: error instanceof Error ? error.message : String(error), itemCount: 1, detailCount: 0, imageCount: 0, items: [makeFallbackSourceLink(source)] };
+    const detectedAt = new Date().toISOString();
+    const notices = source.id === "nicety" ? [{ sourceId: source.id, sourceName: source.name, title: "空き状況を監視中（今回の取得は要確認）", summary: "サイト取得に失敗したため、次回の自動取得で再確認します。", url: source.url, type: "watch_error", detectedAt }] : [];
+    return { ok: false, sourceId: source.id, sourceName: source.name, url: source.url, startedAt, finishedAt: detectedAt, error: error instanceof Error ? error.message : String(error), itemCount: 1, detailCount: 0, imageCount: 0, noticeCount: notices.length, notices, items: [makeFallbackSourceLink(source)] };
   }
 }
 
@@ -456,12 +518,14 @@ async function main() {
   const context = await browser.newContext({ locale: "ja-JP", userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" });
   const diagnostics = { generatedAt: new Date().toISOString(), sources: [] };
   const allItems = [];
+  const allNotices = [];
 
   for (const source of sources) {
     const page = await context.newPage();
     const result = await scrapeSource(page, source);
-    diagnostics.sources.push({ ok: result.ok, sourceId: result.sourceId, sourceName: result.sourceName, url: result.url, title: result.title || "", startedAt: result.startedAt, finishedAt: result.finishedAt, itemCount: result.itemCount, detailCount: result.detailCount || 0, imageCount: result.imageCount || 0, error: result.error || null });
+    diagnostics.sources.push({ ok: result.ok, sourceId: result.sourceId, sourceName: result.sourceName, url: result.url, title: result.title || "", startedAt: result.startedAt, finishedAt: result.finishedAt, itemCount: result.itemCount, detailCount: result.detailCount || 0, imageCount: result.imageCount || 0, noticeCount: result.noticeCount || 0, error: result.error || null });
     allItems.push(...result.items);
+    allNotices.push(...(result.notices || []));
     await page.close().catch(() => {});
   }
 
@@ -473,10 +537,16 @@ async function main() {
   trackedItems.forEach((item) => { item.score = scoreListing(item); });
   trackedItems.sort((a, b) => Number(b.score) - Number(a.score));
 
+  const sourceUpdates = {
+    generatedAt: diagnostics.generatedAt,
+    notices: dedupeNotices(allNotices).slice(0, 30)
+  };
+
   await fs.writeFile(propertiesPath, `${JSON.stringify(trackedItems, null, 2)}\n`, "utf8");
   await fs.writeFile(historyPath, `${JSON.stringify(nextHistory, null, 2)}\n`, "utf8");
-  await fs.writeFile(diagnosticsPath, `${JSON.stringify({ ...diagnostics, itemCount: trackedItems.length, detailCount: trackedItems.filter((item) => item.matchStatus === "detail_link").length, imageCount: trackedItems.filter((item) => Boolean(item.imageUrl)).length, newCount, rentChangeCount }, null, 2)}\n`, "utf8");
-  console.log(`Scraped ${trackedItems.length} listing/search records from ${sources.length} sources. New listings: ${newCount}. Rent changes: ${rentChangeCount}.`);
+  await fs.writeFile(sourceUpdatesPath, `${JSON.stringify(sourceUpdates, null, 2)}\n`, "utf8");
+  await fs.writeFile(diagnosticsPath, `${JSON.stringify({ ...diagnostics, itemCount: trackedItems.length, detailCount: trackedItems.filter((item) => item.matchStatus === "detail_link").length, imageCount: trackedItems.filter((item) => Boolean(item.imageUrl)).length, newCount, rentChangeCount, sourceNoticeCount: sourceUpdates.notices.length }, null, 2)}\n`, "utf8");
+  console.log(`Scraped ${trackedItems.length} listing/search records from ${sources.length} sources. New listings: ${newCount}. Rent changes: ${rentChangeCount}. Source notices: ${sourceUpdates.notices.length}.`);
 }
 
 main().catch((error) => {
