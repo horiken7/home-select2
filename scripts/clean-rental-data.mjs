@@ -16,6 +16,14 @@ function isBadUrl(url) {
   return false;
 }
 
+function isUr(item) {
+  return item?.sourceId === "ur" || String(item?.source || "").includes("UR");
+}
+
+function hasAnyValidUrl(item) {
+  return !isBadUrl(item?.listingUrl) || !isBadUrl(item?.sourceUrl);
+}
+
 function hasConcreteDetailUrl(item) {
   if (isBadUrl(item?.listingUrl)) return false;
   if (isBadUrl(item?.sourceUrl)) return false;
@@ -27,18 +35,28 @@ function hasConcreteDetailUrl(item) {
 function isDisplayable(item) {
   const title = String(item?.title || "");
   if (!item) return false;
-  if (Number(item.layout) < 2) return false;
+  if (Number(item.layout || 2) < 2) return false;
   if (title.includes("会社紹介")) return false;
   if (title.includes("店舗紹介")) return false;
+  if (isUr(item)) return hasAnyValidUrl(item);
   if (!hasConcreteDetailUrl(item)) return false;
   return true;
 }
 
 function fixUrls(item) {
+  const tags = Array.from(new Set([...(item.tags || []).filter((tag) => tag !== "リンク要確認" && tag !== "検索導線"), "個別物件リンク"]));
+  if (isUr(item)) {
+    return {
+      ...item,
+      type: "public",
+      matchStatus: hasConcreteDetailUrl(item) ? "detail_link" : "ur_link",
+      tags: Array.from(new Set([...tags, "UR", "UR・公的賃貸"]))
+    };
+  }
   return {
     ...item,
     matchStatus: "detail_link",
-    tags: Array.from(new Set([...(item.tags || []).filter((tag) => tag !== "リンク要確認" && tag !== "検索導線"), "個別物件リンク"]))
+    tags
   };
 }
 
@@ -49,4 +67,4 @@ const cleaned = raw
   .sort((a, b) => Number(b.score || 0) - Number(a.score || 0));
 
 await fs.writeFile(propertiesPath, `${JSON.stringify(cleaned, null, 2)}\n`, "utf8");
-console.log(`Cleaned rental data detail-only: ${raw.length} -> ${cleaned.length}`);
+console.log(`Cleaned rental data with UR kept: ${raw.length} -> ${cleaned.length}`);
