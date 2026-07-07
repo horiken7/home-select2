@@ -1,0 +1,117 @@
+.update-panel {
+  border-color: rgba(37, 99, 235, .16);
+  background: linear-gradient(180deg, rgba(239, 246, 255, .86), #fff);
+}
+
+.update-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, .7fr) 1.3fr;
+  gap: 18px;
+}
+
+.new-count-card,
+.site-news-card {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #fff;
+  padding: 18px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, .06);
+}
+
+.new-count-label,
+.site-news-head span {
+  display: block;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+.new-count-card strong {
+  display: block;
+  margin: 8px 0;
+  color: var(--primary-dark);
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  line-height: 1;
+}
+
+.new-count-card.has-new strong {
+  color: #dc2626;
+}
+
+.new-count-card p {
+  margin: 0;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.site-news-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.site-news-head small {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid rgba(37, 99, 235, .18);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-weight: 900;
+}
+
+.site-news-list {
+  display: grid;
+  gap: 10px;
+}
+
+.site-news-item {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.site-news-item a {
+  color: var(--primary-dark);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.site-news-item a:hover {
+  text-decoration: underline;
+}
+
+.site-news-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.site-news-source {
+  color: #0f766e;
+  background: #ecfdf5;
+  border: 1px solid rgba(15, 118, 110, .18);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+.site-news-summary {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: .9rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 780px) {
+  .update-grid {
+    grid-template-columns: 1fr;
+  }
+}
