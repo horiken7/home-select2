@@ -34,6 +34,9 @@ jobs:
       - name: Patch scrape collector
         run: node scripts/patch-scrape-collector.mjs
 
+      - name: Patch image fallbacks
+        run: node scripts/patch-image-fallbacks.mjs
+
       - name: Scrape rental sources
         run: npm run scrape
 
