@@ -31,6 +31,9 @@ jobs:
       - name: Patch scrape output limit
         run: node scripts/patch-scrape-limits.mjs
 
+      - name: Patch scrape collector
+        run: node scripts/patch-scrape-collector.mjs
+
       - name: Scrape rental sources
         run: npm run scrape
 
