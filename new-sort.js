@@ -86,6 +86,37 @@
     });
   }
 
+  function isFloorOrElevatorText(text) {
+    const value = String(text || '').trim();
+    if (!value) return false;
+    return /^(EV要確認|エレベーターあり|エレベーターなし|階数要確認|[地下B]?\d+階(?:\s*\/\s*\d+階建)?)$/.test(value);
+  }
+
+  function removeDuplicateFloorElevatorBadges() {
+    document.querySelectorAll('.property-card').forEach((card) => {
+      const shownValues = new Set();
+      const floorElevator = factValue(card, '階数・エレベーター');
+      floorElevator.split('/').map((text) => text.trim()).filter(Boolean).forEach((text) => shownValues.add(text));
+
+      card.querySelectorAll('.meta-row .walk-chip').forEach((chip) => {
+        const text = chip.textContent?.trim() || '';
+        if (/階|EV|エレベーター|エレベータ/.test(text)) shownValues.add(text);
+      });
+
+      card.querySelectorAll('.badges .badge').forEach((badge) => {
+        const text = badge.textContent?.trim() || '';
+        if (shownValues.has(text) || isFloorOrElevatorText(text)) {
+          badge.remove();
+        }
+      });
+    });
+  }
+
+  function tidyCards() {
+    fixRenderedCardTitles();
+    removeDuplicateFloorElevatorBadges();
+  }
+
   const originalDisplayTitle = typeof displayTitle === 'function' ? displayTitle : null;
   if (originalDisplayTitle && !window.__homeSelectTitlePatched) {
     window.__homeSelectTitlePatched = true;
@@ -101,7 +132,7 @@
     window.__homeSelectRenderTitlePatched = true;
     renderCards = function patchedRenderCards() {
       originalRenderCards();
-      fixRenderedCardTitles();
+      tidyCards();
     };
   }
 
@@ -209,15 +240,15 @@
   window.addEventListener('load', () => {
     applyDefaultFilters();
     if (typeof renderCards === 'function') renderCards();
-    fixRenderedCardTitles();
+    tidyCards();
     setTimeout(() => {
-      fixRenderedCardTitles();
+      tidyCards();
       renderLimitedSiteNews();
     }, 0);
 
     const cards = document.querySelector('#cards');
     if (cards && !window.__homeSelectTitleObserver) {
-      window.__homeSelectTitleObserver = new MutationObserver(() => fixRenderedCardTitles());
+      window.__homeSelectTitleObserver = new MutationObserver(() => tidyCards());
       window.__homeSelectTitleObserver.observe(cards, { childList: true });
     }
 
@@ -227,7 +258,7 @@
         applyDefaultFilters();
         if (typeof state === 'object') state.currentPage = 1;
         if (typeof renderCards === 'function') renderCards();
-        fixRenderedCardTitles();
+        tidyCards();
       }, 0);
     });
   });
