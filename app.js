@@ -76,6 +76,10 @@ function badgeClass(tag) {
   return "";
 }
 
+function isHiddenBadgeTag(tag) {
+  return ["画像取得", "個別物件リンク", "UR"].includes(String(tag || "").trim());
+}
+
 function isBadListingUrl(url) {
   if (!url) return true;
   if (!String(url).startsWith("https://")) return true;
@@ -438,7 +442,8 @@ function renderImageMarkup(item, cardTitle) {
 }
 
 function renderCard(item, index) {
-  const tags = Array.from(new Set([...getEligibilityTags(item), ...(Array.isArray(item.tags) ? item.tags : [])]));
+  const tags = Array.from(new Set([...getEligibilityTags(item), ...(Array.isArray(item.tags) ? item.tags : [])]))
+    .filter((tag) => !isHiddenBadgeTag(tag));
   const { detailUrl, searchUrl, cardLinkUrl } = getUrls(item);
   const accuracy = getAccuracy(item, detailUrl, searchUrl);
   const cardTitle = displayTitle(item);
@@ -471,7 +476,6 @@ function renderCard(item, index) {
           <div class="card-main">
             <p class="status">${escapeHtml(item.status || item.matchStatus || "候補")}</p>
             <h3 class="card-title">${textLink(cardLinkUrl, "", cardTitle, `${cardTitle}を開く`)}</h3>
-            <p class="original-title">元タイトル：${escapeHtml(shorten(item.title, 56))}</p>
           </div>
           <div class="score" title="条件一致度を100点満点で評価した暫定スコアです">
             <span class="score-label">おすすめ度</span>
@@ -502,7 +506,6 @@ function renderCard(item, index) {
         </div>
 
         <div class="meta-row">
-          <span class="accuracy accuracy-${accuracy.className}" title="${escapeAttr(accuracy.hint)}">取得精度：${escapeHtml(accuracy.label)}</span>
           <span class="walk-chip">駅徒歩：${escapeHtml(item.walkLabel)}</span>
           <span class="walk-chip">${escapeHtml(floorLabel)}</span>
           <span class="walk-chip">${escapeHtml(elevatorLabel)}</span>
@@ -512,7 +515,6 @@ function renderCard(item, index) {
           ${tags.map((tag) => `<span class="badge ${badgeClass(tag)}">${escapeHtml(tag)}</span>`).join("")}
         </div>
 
-        <p class="note">${escapeHtml(item.note)}</p>
         <div class="card-actions">
           ${detailButton}
           ${searchButton}
