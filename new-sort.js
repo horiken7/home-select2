@@ -1,6 +1,46 @@
 (function () {
   const MAX_VISIBLE_NEWS = 5;
+  const DEFAULT_RENT = '8';
+  const DEFAULT_PRIORITY = 'newDesc';
   let expanded = false;
+
+  function applyDefaultFilters() {
+    const rentFilter = document.querySelector('#rentFilter');
+    const priorityFilter = document.querySelector('#priorityFilter');
+    if (rentFilter) rentFilter.value = DEFAULT_RENT;
+    if (priorityFilter) priorityFilter.value = DEFAULT_PRIORITY;
+  }
+
+  function isNewListing(item) {
+    return Boolean(
+      item?.isNew ||
+      (Array.isArray(item?.tags) && item.tags.some((tag) => String(tag).toUpperCase() === 'NEW'))
+    );
+  }
+
+  function dateValue(item) {
+    const value = item?.firstSeenAt || item?.lastSeenAt || item?.detectedAt || item?.createdAt || '';
+    const time = Date.parse(value);
+    return Number.isNaN(time) ? 0 : time;
+  }
+
+  const originalSortCards = typeof sortCards === 'function' ? sortCards : null;
+  if (originalSortCards && !window.__homeSelectNewSortPatched) {
+    window.__homeSelectNewSortPatched = true;
+    sortCards = function patchedSortCards(cards, priority) {
+      if (priority === DEFAULT_PRIORITY) {
+        return cards.sort((a, b) => {
+          const aNew = isNewListing(a) ? 1 : 0;
+          const bNew = isNewListing(b) ? 1 : 0;
+          if (aNew !== bNew) return bNew - aNew;
+          const dateDiff = dateValue(b) - dateValue(a);
+          if (dateDiff !== 0) return dateDiff;
+          return Number(b.displayScore || b.score || 0) - Number(a.displayScore || a.score || 0);
+        });
+      }
+      return originalSortCards(cards, priority);
+    };
+  }
 
   function htmlEscape(value) {
     return String(value ?? '')
@@ -83,7 +123,19 @@
     };
   }
 
+  applyDefaultFilters();
+
   window.addEventListener('load', () => {
+    applyDefaultFilters();
     setTimeout(renderLimitedSiteNews, 0);
+
+    const resetButton = document.querySelector('#resetButton');
+    resetButton?.addEventListener('click', () => {
+      setTimeout(() => {
+        applyDefaultFilters();
+        if (typeof state === 'object') state.currentPage = 1;
+        if (typeof renderCards === 'function') renderCards();
+      }, 0);
+    });
   });
 })();
