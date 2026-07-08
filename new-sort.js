@@ -60,6 +60,32 @@
     return false;
   }
 
+  function factValue(card, label) {
+    const facts = Array.from(card.querySelectorAll('.key-fact'));
+    const hit = facts.find((fact) => fact.querySelector('span')?.textContent?.trim() === label);
+    return hit?.querySelector('strong')?.textContent?.trim() || '';
+  }
+
+  function fallbackTitleFromCard(card) {
+    const source = card.querySelector('.card-image')?.dataset?.source || card.querySelector('.badge')?.textContent?.trim() || '候補';
+    const rent = factValue(card, '家賃') || '家賃要確認';
+    const layout = factValue(card, '間取り') || '間取り要確認';
+    return `${source} ${layout} / ${rent}`;
+  }
+
+  function fixRenderedCardTitles() {
+    document.querySelectorAll('.property-card').forEach((card) => {
+      const titleNode = card.querySelector('.card-title a, .card-title span, .card-title');
+      if (!titleNode) return;
+      const currentTitle = titleNode.textContent || '';
+      const originalTitle = card.querySelector('.original-title')?.textContent || '';
+      if (!isBadListingTitle(currentTitle) && !isBadListingTitle(originalTitle.replace(/^元タイトル：/, ''))) return;
+      const fixedTitle = fallbackTitleFromCard(card);
+      titleNode.textContent = fixedTitle;
+      card.querySelector('.card-image')?.setAttribute('aria-label', `${fixedTitle}を開く`);
+    });
+  }
+
   const originalDisplayTitle = typeof displayTitle === 'function' ? displayTitle : null;
   if (originalDisplayTitle && !window.__homeSelectTitlePatched) {
     window.__homeSelectTitlePatched = true;
@@ -67,6 +93,15 @@
       const title = originalDisplayTitle(item);
       if (isBadListingTitle(title) || isBadListingTitle(item?.title)) return fallbackListingTitle(item);
       return title;
+    };
+  }
+
+  const originalRenderCards = typeof renderCards === 'function' ? renderCards : null;
+  if (originalRenderCards && !window.__homeSelectRenderTitlePatched) {
+    window.__homeSelectRenderTitlePatched = true;
+    renderCards = function patchedRenderCards() {
+      originalRenderCards();
+      fixRenderedCardTitles();
     };
   }
 
@@ -174,7 +209,17 @@
   window.addEventListener('load', () => {
     applyDefaultFilters();
     if (typeof renderCards === 'function') renderCards();
-    setTimeout(renderLimitedSiteNews, 0);
+    fixRenderedCardTitles();
+    setTimeout(() => {
+      fixRenderedCardTitles();
+      renderLimitedSiteNews();
+    }, 0);
+
+    const cards = document.querySelector('#cards');
+    if (cards && !window.__homeSelectTitleObserver) {
+      window.__homeSelectTitleObserver = new MutationObserver(() => fixRenderedCardTitles());
+      window.__homeSelectTitleObserver.observe(cards, { childList: true });
+    }
 
     const resetButton = document.querySelector('#resetButton');
     resetButton?.addEventListener('click', () => {
@@ -182,6 +227,7 @@
         applyDefaultFilters();
         if (typeof state === 'object') state.currentPage = 1;
         if (typeof renderCards === 'function') renderCards();
+        fixRenderedCardTitles();
       }, 0);
     });
   });
