@@ -110,6 +110,22 @@
   line-height: 1.55;
 }
 
+.site-news-more-button {
+  justify-self: start;
+  border: 1px solid rgba(37, 99, 235, .28);
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, .10);
+}
+
+.site-news-more-button:hover {
+  background: #eff6ff;
+}
+
 @media (max-width: 780px) {
   .update-grid {
     grid-template-columns: 1fr;
