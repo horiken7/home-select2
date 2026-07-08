@@ -37,6 +37,9 @@ jobs:
       - name: Patch image fallbacks
         run: node scripts/patch-image-fallbacks.mjs
 
+      - name: Patch elevator detection
+        run: node scripts/patch-elevator-detection.mjs
+
       - name: Scrape rental sources
         run: npm run scrape
 
