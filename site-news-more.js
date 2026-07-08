@@ -1,5 +1,8 @@
 (function () {
   const DEFAULT_VISIBLE_COUNT = 5;
+  let expanded = false;
+  let observer = null;
+  let scheduled = false;
 
   function ensureStyle() {
     if (document.querySelector('#siteNewsMoreStyle')) return;
@@ -29,7 +32,13 @@
     document.head.appendChild(style);
   }
 
+  function setButtonText(button, text) {
+    if (button.textContent !== text) button.textContent = text;
+  }
+
   function applySiteNewsLimit() {
+    scheduled = false;
+
     const list = document.querySelector('#siteNewsList');
     if (!list) return;
 
@@ -42,12 +51,12 @@
     let button = card.querySelector('#siteNewsMoreButton');
 
     if (items.length <= DEFAULT_VISIBLE_COUNT) {
+      expanded = false;
       items.forEach((item) => item.classList.remove('is-extra-hidden'));
       button?.remove();
       return;
     }
 
-    const expanded = button?.dataset.expanded === 'true';
     items.forEach((item, index) => {
       item.classList.toggle('is-extra-hidden', !expanded && index >= DEFAULT_VISIBLE_COUNT);
     });
@@ -57,21 +66,32 @@
       button.id = 'siteNewsMoreButton';
       button.type = 'button';
       button.className = 'site-news-more-button';
-      button.dataset.expanded = 'false';
       button.addEventListener('click', () => {
-        const nowExpanded = button.dataset.expanded !== 'true';
-        button.dataset.expanded = String(nowExpanded);
+        expanded = !expanded;
         applySiteNewsLimit();
       });
       card.appendChild(button);
     }
 
     const hiddenCount = Math.max(0, items.length - DEFAULT_VISIBLE_COUNT);
-    button.textContent = expanded ? '折りたたむ' : `さらに表示（残り${hiddenCount}件）`;
+    setButtonText(button, expanded ? '折りたたむ' : `さらに表示（残り${hiddenCount}件）`);
   }
 
-  window.addEventListener('load', applySiteNewsLimit);
+  function scheduleApply() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(applySiteNewsLimit);
+  }
 
-  const observer = new MutationObserver(() => applySiteNewsLimit());
-  observer.observe(document.body, { childList: true, subtree: true });
+  function startObserver() {
+    const list = document.querySelector('#siteNewsList');
+    if (!list || observer) return;
+    observer = new MutationObserver(scheduleApply);
+    observer.observe(list, { childList: true });
+  }
+
+  window.addEventListener('load', () => {
+    applySiteNewsLimit();
+    startObserver();
+  });
 })();
