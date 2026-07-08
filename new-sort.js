@@ -24,6 +24,52 @@
     return Number.isNaN(time) ? 0 : time;
   }
 
+  function fallbackListingTitle(item) {
+    const source = item?.source || item?.sourceId || '候補';
+    const layout = item?.layoutLabel || '間取り要確認';
+    const rent = item?.rentLabel || '家賃要確認';
+    return `${source} ${layout} / ${rent}`;
+  }
+
+  function isBadListingTitle(title) {
+    const text = String(title || '').replace(/\s+/g, ' ').trim();
+    if (!text) return true;
+    const badPatterns = [
+      /即入居可/,
+      /空き?室.*確認/,
+      /無料/,
+      /問い合わせ|問合せ|お問い合わせ/,
+      /資料請求/,
+      /見学予約/,
+      /内見予約/,
+      /電話する/,
+      /メールする/,
+      /お気に入り/,
+      /詳細を見る/,
+      /物件の詳細を見る/,
+      /画像\d+枚/,
+      /閲覧回数/,
+      /新着/,
+      /^部屋詳細$/,
+      /^物件詳細$/,
+      /^詳細$/,
+      /^確認$/
+    ];
+    if (badPatterns.some((pattern) => pattern.test(text))) return true;
+    if (text.length <= 6 && !/[0-9０-９].*(LDK|DK|K|万円)/i.test(text)) return true;
+    return false;
+  }
+
+  const originalDisplayTitle = typeof displayTitle === 'function' ? displayTitle : null;
+  if (originalDisplayTitle && !window.__homeSelectTitlePatched) {
+    window.__homeSelectTitlePatched = true;
+    displayTitle = function patchedDisplayTitle(item) {
+      const title = originalDisplayTitle(item);
+      if (isBadListingTitle(title) || isBadListingTitle(item?.title)) return fallbackListingTitle(item);
+      return title;
+    };
+  }
+
   const originalSortCards = typeof sortCards === 'function' ? sortCards : null;
   if (originalSortCards && !window.__homeSelectNewSortPatched) {
     window.__homeSelectNewSortPatched = true;
@@ -127,6 +173,7 @@
 
   window.addEventListener('load', () => {
     applyDefaultFilters();
+    if (typeof renderCards === 'function') renderCards();
     setTimeout(renderLimitedSiteNews, 0);
 
     const resetButton = document.querySelector('#resetButton');
