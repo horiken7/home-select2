@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-03T03:29:16.761Z",
+  "generatedAt": "2026-11-04T02:22:59.812Z",
   "notices": [
     {
       "sourceId": "able",
@@ -8,16 +8,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:29:22.218Z"
-    },
-    {
-      "sourceId": "able",
-      "sourceName": "エイブル",
-      "title": "空室確認する無料",
-      "summary": "検索対象サイト上で検出した新着・更新候補です。",
-      "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
-      "type": "site_notice",
-      "detectedAt": "2026-11-03T03:29:22.218Z"
+      "detectedAt": "2026-11-04T02:23:06.019Z"
     },
     {
       "sourceId": "able",
@@ -26,7 +17,16 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:29:22.218Z"
+      "detectedAt": "2026-11-04T02:23:06.019Z"
+    },
+    {
+      "sourceId": "able",
+      "sourceName": "エイブル",
+      "title": "空室確認する無料",
+      "summary": "検索対象サイト上で検出した新着・更新候補です。",
+      "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
+      "type": "site_notice",
+      "detectedAt": "2026-11-04T02:23:06.019Z"
     },
     {
       "sourceId": "able",
@@ -35,7 +35,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:29:22.218Z"
+      "detectedAt": "2026-11-04T02:23:06.019Z"
     },
     {
       "sourceId": "able",
@@ -44,7 +44,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:29:22.218Z"
+      "detectedAt": "2026-11-04T02:23:06.019Z"
     },
     {
       "sourceId": "athome",
@@ -53,7 +53,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.athome.co.jp/chintai/theme/koreisha/fukuoka/list/",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:29:34.022Z"
+      "detectedAt": "2026-11-04T02:23:18.918Z"
     },
     {
       "sourceId": "athome",
@@ -62,7 +62,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.athome.co.jp/chintai/theme/koreisha/fukuoka/list/",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:29:34.022Z"
+      "detectedAt": "2026-11-04T02:23:18.918Z"
     },
     {
       "sourceId": "ur",
@@ -71,16 +71,16 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:31:00.965Z"
+      "detectedAt": "2026-11-04T02:24:49.384Z"
     },
     {
       "sourceId": "ur",
       "sourceName": "UR賃貸住宅",
-      "title": "該当空室数10部屋",
+      "title": "該当空室数7部屋",
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:31:00.965Z"
+      "detectedAt": "2026-11-04T02:24:49.384Z"
     },
     {
       "sourceId": "ur",
@@ -89,16 +89,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:31:00.965Z"
-    },
-    {
-      "sourceId": "ur",
-      "sourceName": "UR賃貸住宅",
-      "title": "敷金 2か月 礼金・仲介手数料・更新料・保証人 ナシ",
-      "summary": "検索対象サイト上で検出した新着・更新候補です。",
-      "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
-      "type": "site_notice",
-      "detectedAt": "2026-11-03T03:31:00.965Z"
+      "detectedAt": "2026-11-04T02:24:49.384Z"
     },
     {
       "sourceId": "ur",
@@ -107,16 +98,25 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:31:00.965Z"
+      "detectedAt": "2026-11-04T02:24:49.384Z"
+    },
+    {
+      "sourceId": "ur",
+      "sourceName": "UR賃貸住宅",
+      "title": "【ご利用要件あり】子育て世帯・若者夫婦世帯限定。ご登録の希望条件に合うお部屋をEメールでお知らせするサービスです。",
+      "summary": "検索対象サイト上で検出した新着・更新候補です。",
+      "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
+      "type": "site_notice",
+      "detectedAt": "2026-11-04T02:24:49.384Z"
     },
     {
       "sourceId": "nicety",
       "sourceName": "ニセティ / NICE TY",
-      "title": "最終更新日：2026/11/2",
+      "title": "最終更新日：2026/11/4",
       "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
       "url": "https://www.nicety.or.jp/",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:31:45.150Z"
+      "detectedAt": "2026-11-04T02:25:28.698Z"
     },
     {
       "sourceId": "nicety",
@@ -125,7 +125,16 @@
       "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
       "url": "https://www.nicety.or.jp/",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:31:45.150Z"
+      "detectedAt": "2026-11-04T02:25:28.698Z"
+    },
+    {
+      "sourceId": "nicety",
+      "sourceName": "ニセティ / NICE TY",
+      "title": "現在の募集状況（抽選方式募集中）",
+      "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
+      "url": "https://www.nicety.or.jp/",
+      "type": "site_notice",
+      "detectedAt": "2026-11-04T02:25:28.698Z"
     },
     {
       "sourceId": "nicety",
@@ -134,7 +143,7 @@
       "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
       "url": "https://www.nicety.or.jp/",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:31:45.150Z"
+      "detectedAt": "2026-11-04T02:25:28.698Z"
     },
     {
       "sourceId": "nicety",
@@ -143,16 +152,7 @@
       "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
       "url": "https://www.nicety.or.jp/",
       "type": "site_notice",
-      "detectedAt": "2026-11-03T03:31:45.150Z"
-    },
-    {
-      "sourceId": "nicety",
-      "sourceName": "ニセティ / NICE TY",
-      "title": "ひとり親世帯の方 随時募集制度をご活用ください 対象住宅も増えました",
-      "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
-      "url": "https://www.nicety.or.jp/",
-      "type": "site_notice",
-      "detectedAt": "2026-11-03T03:31:45.150Z"
+      "detectedAt": "2026-11-04T02:25:28.698Z"
     }
   ]
 }
