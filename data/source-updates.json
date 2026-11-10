@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T01:45:18.505Z",
+  "generatedAt": "2026-11-10T04:09:49.305Z",
   "notices": [
     {
       "sourceId": "able",
@@ -8,16 +8,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:45:23.486Z"
-    },
-    {
-      "sourceId": "able",
-      "sourceName": "エイブル",
-      "title": "即入居可",
-      "summary": "検索対象サイト上で検出した新着・更新候補です。",
-      "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
-      "type": "site_notice",
-      "detectedAt": "2026-11-09T01:45:23.486Z"
+      "detectedAt": "2026-11-10T04:09:54.212Z"
     },
     {
       "sourceId": "able",
@@ -26,7 +17,16 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:45:23.486Z"
+      "detectedAt": "2026-11-10T04:09:54.212Z"
+    },
+    {
+      "sourceId": "able",
+      "sourceName": "エイブル",
+      "title": "即入居可",
+      "summary": "検索対象サイト上で検出した新着・更新候補です。",
+      "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
+      "type": "site_notice",
+      "detectedAt": "2026-11-10T04:09:54.212Z"
     },
     {
       "sourceId": "able",
@@ -35,7 +35,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:45:23.486Z"
+      "detectedAt": "2026-11-10T04:09:54.212Z"
     },
     {
       "sourceId": "able",
@@ -44,7 +44,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.able.co.jp/list/?p=3&prefkey=fukuoka&contentMode=senior&e=401007&e=403001&e=403010&e=403011&t=0&t=F&n=9&cf=&ct=&m=4&m=5&m=6&m=7&m=8&m=9&sf=0&st=0&b=1&b=2&b=3&h=99&j=&jks=0",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:45:23.486Z"
+      "detectedAt": "2026-11-10T04:09:54.212Z"
     },
     {
       "sourceId": "athome",
@@ -53,7 +53,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.athome.co.jp/chintai/theme/koreisha/fukuoka/list/",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:45:32.771Z"
+      "detectedAt": "2026-11-10T04:10:06.223Z"
     },
     {
       "sourceId": "athome",
@@ -62,7 +62,34 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.athome.co.jp/chintai/theme/koreisha/fukuoka/list/",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:45:32.771Z"
+      "detectedAt": "2026-11-10T04:10:06.223Z"
+    },
+    {
+      "sourceId": "homemate",
+      "sourceName": "ホームメイト",
+      "title": "システムメンテナンスのお知らせ",
+      "summary": "検索対象サイト上で検出した新着・更新候補です。",
+      "url": "https://www.homemate.co.jp/kt_57/pr-fukuoka/fukuoka-city/?pb=10&pb=11&pb=12&pb=13&pb=7&pb=9&so=10&ye=10",
+      "type": "site_notice",
+      "detectedAt": "2026-11-10T04:11:23.290Z"
+    },
+    {
+      "sourceId": "homemate",
+      "sourceName": "ホームメイト",
+      "title": "【重要】当社システムへのサイバー攻撃に関するお知らせとお詫び",
+      "summary": "検索対象サイト上で検出した新着・更新候補です。",
+      "url": "https://www.homemate.co.jp/kt_57/pr-fukuoka/fukuoka-city/?pb=10&pb=11&pb=12&pb=13&pb=7&pb=9&so=10&ye=10",
+      "type": "site_notice",
+      "detectedAt": "2026-11-10T04:11:23.290Z"
+    },
+    {
+      "sourceId": "homemate",
+      "sourceName": "ホームメイト",
+      "title": "※詳細につきましては、上記のお知らせをご確認ください。",
+      "summary": "検索対象サイト上で検出した新着・更新候補です。",
+      "url": "https://www.homemate.co.jp/kt_57/pr-fukuoka/fukuoka-city/?pb=10&pb=11&pb=12&pb=13&pb=7&pb=9&so=10&ye=10",
+      "type": "site_notice",
+      "detectedAt": "2026-11-10T04:11:23.290Z"
     },
     {
       "sourceId": "ur",
@@ -71,16 +98,16 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:46:57.920Z"
+      "detectedAt": "2026-11-10T04:11:28.357Z"
     },
     {
       "sourceId": "ur",
       "sourceName": "UR賃貸住宅",
-      "title": "該当空室数5部屋",
+      "title": "該当空室数3部屋",
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:46:57.920Z"
+      "detectedAt": "2026-11-10T04:11:28.357Z"
     },
     {
       "sourceId": "ur",
@@ -89,7 +116,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:46:57.920Z"
+      "detectedAt": "2026-11-10T04:11:28.357Z"
     },
     {
       "sourceId": "ur",
@@ -98,7 +125,7 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:46:57.920Z"
+      "detectedAt": "2026-11-10T04:11:28.357Z"
     },
     {
       "sourceId": "ur",
@@ -107,16 +134,16 @@
       "summary": "検索対象サイト上で検出した新着・更新候補です。",
       "url": "https://www.ur-net.go.jp/chintai/kyushu/fukuoka/result/?area=01&skcs=133&skcs=131&skcs=134&skcs=137&skcs=136&rent_low=&rent_high=&walk=&floorspace_low=&floorspace_high=&years=&tdfk=40&todofuken=fukuoka",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:46:57.920Z"
+      "detectedAt": "2026-11-10T04:11:28.357Z"
     },
     {
       "sourceId": "nicety",
       "sourceName": "ニセティ / NICE TY",
-      "title": "最終更新日：2026/11/5",
+      "title": "最終更新日：2026/11/9",
       "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
       "url": "https://www.nicety.or.jp/",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:47:27.671Z"
+      "detectedAt": "2026-11-10T04:11:58.594Z"
     },
     {
       "sourceId": "nicety",
@@ -125,7 +152,7 @@
       "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
       "url": "https://www.nicety.or.jp/",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:47:27.671Z"
+      "detectedAt": "2026-11-10T04:11:58.594Z"
     },
     {
       "sourceId": "nicety",
@@ -134,7 +161,7 @@
       "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
       "url": "https://www.nicety.or.jp/",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:47:27.671Z"
+      "detectedAt": "2026-11-10T04:11:58.594Z"
     },
     {
       "sourceId": "nicety",
@@ -143,7 +170,7 @@
       "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
       "url": "https://www.nicety.or.jp/",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:47:27.671Z"
+      "detectedAt": "2026-11-10T04:11:58.594Z"
     },
     {
       "sourceId": "nicety",
@@ -152,7 +179,7 @@
       "summary": "ニセティの空き・募集・入居関連の更新候補です。リンク先で最新状況を確認してください。",
       "url": "https://www.nicety.or.jp/",
       "type": "site_notice",
-      "detectedAt": "2026-11-09T01:47:27.671Z"
+      "detectedAt": "2026-11-10T04:11:58.594Z"
     }
   ]
 }
